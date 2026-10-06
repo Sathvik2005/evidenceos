@@ -2,13 +2,14 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 describe('.env.example', () => {
-  const lines = readFileSync(new URL('../../../.env.example', import.meta.url), 'utf8')
-    .split(/\r?\n/)
-    .filter((line) => /^[A-Z_]+=/.test(line))
+  const example = readFileSync(
+    new URL('../../../.env.example', import.meta.url),
+    'utf8',
+  )
 
   it('keeps the admin token server-only and empty', () => {
-    expect(lines).toContain('MOMEN_ADMIN_TOKEN=')
-    expect(lines.some((line) => /^VITE_.*(TOKEN|SECRET|KEY)/.test(line))).toBe(false)
+    expect(example).toMatch(/^MOMEN_ADMIN_TOKEN=$/m)
+    expect(example).not.toMatch(/^VITE_[A-Z0-9_]*(TOKEN|SECRET|KEY)=/m)
   })
 
   it('keeps the endpoint diagnostic anonymous-only', () => {
