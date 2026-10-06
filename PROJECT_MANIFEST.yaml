@@ -77,6 +77,7 @@ observability:
 documentation:
   system_design: "EvidenceOS_COMPLETE_PACKAGE/implementation-prompts/system dessign.md"
   architecture: docs/ARCHITECTURE.md
+  diagrams: docs/DIAGRAMS.md
   api_contracts: docs/engineering/API_CONTRACTS.md
   security: docs/security
   operations: docs/operations
