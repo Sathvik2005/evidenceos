@@ -74,7 +74,7 @@ flowchart LR
 
 ## Demo
 
-The demo question is **“Does remote learning improve student outcomes?”** over three real, verified public sources (`demo/corpus.json`). Script, checklist and recovery steps: [`docs/DEMO.md`](docs/DEMO.md).
+The demo question is **“Does remote learning improve student outcomes?”** over recorded passages copied verbatim from three real public sources (`demo/corpus.json`); the models still run live. Script, checklist and recovery steps: [`docs/DEMO.md`](docs/DEMO.md).
 
 > 📷 *Screenshots / demo video: not yet recorded. Add them under `docs/media/` and link them here.*
 
@@ -91,7 +91,7 @@ frontend/src/
   pages/ components/ graph/ gateway/   UI and browser client
 database/migrations/ PostgreSQL schema
 demo/                Recorded, verified source corpus
-scripts/             Harness, migrations, demo driver
+scripts/             Harness, migrations, demo driver, Momen endpoint probe
 docs/                Architecture, deployment, security, operations, ADRs, audit
 ```
 
