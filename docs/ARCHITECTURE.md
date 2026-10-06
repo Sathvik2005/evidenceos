@@ -15,16 +15,20 @@ GET  /api/investigations/:id[/claims|/evidence|/sources|/changes]   (the UI poll
 POST /api/investigations/:id/refresh   (re-run so new evidence can be assessed; refuses a live run)
 ```
 
-## Layers (`frontend/src`, despite the folder name most of it is server-side)
+## Layers
 
-| Folder | Responsibility |
+The backend is Python (`backend/evidenceos`, [ADR-011](adr/ADR-011-python-backend.md)); the UI is React in `frontend/src`.
+
+| Location | Responsibility |
 | --- | --- |
-| `api/` | Typed contracts and owner-scoped, idempotent persistence over an injected `Database {query}` |
-| `agents/` | Claim Decomposer, Research, Evidence Analyst, Evaluator; each treats model output as untrusted JSON |
-| `validation/` | Deterministic hard rules; they override any model or evaluator opinion |
-| `workflow/` | LangGraph state machine, node handlers, bounded retries, failure classification |
-| `server/` | HTTP app, config, adapters (Anthropic, Tavily, PostgreSQL, recorded demo corpus) |
-| `gateway/`, `pages/`, `components/`, `graph/` | Browser client and UI; the UI never computes a claim state |
+| `backend/evidenceos/contracts.py`, `operations.py` | Validators and owner-scoped, idempotent persistence over an injected async `Database.query` (`db.py`) |
+| `backend/evidenceos/agents/` | Claim Decomposer, Research, Evidence Analyst, Evaluator; each treats model output as untrusted JSON |
+| `backend/evidenceos/validation/` | Deterministic hard rules; they override any model or evaluator opinion |
+| `backend/evidenceos/workflow/` | LangGraph state machine, node handlers, bounded retries, failure classification |
+| `backend/evidenceos/server/` | HTTP handling (`http.py`), FastAPI composition (`app.py`), config, adapters (Anthropic, Tavily, recorded demo corpus) |
+| `backend/evidenceos/cli/` | migrate, seed, demo driver and the local dev server |
+| `api/index.py` | Vercel Python Function entry |
+| `frontend/src/{pages,components,graph,gateway}` | Browser client and UI; the UI never computes a claim state |
 | `database/migrations/` | PostgreSQL schema (provisional) |
 
 ## Responsibilities and trust boundaries

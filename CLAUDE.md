@@ -4,36 +4,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-EvidenceOS: an evidence operating system (question → claims → sources → evidence → evaluation → change detection). Strict TypeScript React 19/Vite npm workspace (single package `frontend` = `@evidenceos/frontend`). Prompts 01–22 are built (see `IMPLEMENTATION_PROGRESS.md`; most are marked Provisional because the authoritative specs and a Momen export are missing); the final audit is in `docs/FINAL_AUDIT.md`. A seeded demo runs locally with `npm run dev:api` (no keys). The system has agents, deterministic validation, the full workflow, a harness, a server/HTTP API, a UI and a demo corpus.
+EvidenceOS: an evidence operating system (question → claims → sources → evidence → evaluation → change detection). The backend is Python (`backend/evidenceos`: FastAPI, LangGraph, psycopg; see ADR-011) and the UI is a strict TypeScript React 19/Vite app (npm workspace `frontend` = `@evidenceos/frontend`). Prompts 01–22 are built (see `IMPLEMENTATION_PROGRESS.md`; most are marked Provisional because the authoritative specs and a Momen export are missing); the final audit is in `docs/FINAL_AUDIT.md`. A seeded demo runs locally with `npm run dev:api` (no keys). The system has agents, deterministic validation, the full workflow, a harness, an HTTP API, a UI and a demo corpus.
 
 ## Commands (run from repo root)
 
 ```sh
 npm install
-npm run dev --workspace=@evidenceos/frontend   # Vite dev server
-npm run typecheck    # tsc -b
-npm run lint         # eslint
-npm test             # vitest run
-npm run build        # tsc -b && vite build
-npm run test --workspace=@evidenceos/frontend -- tests/unit/foo.test.ts   # single test file
-npm run test --workspace=@evidenceos/frontend -- -t "name"                # single test by name
+npm run backend:setup                       # once: backend/.venv + backend dev tools (Python 3.11+)
+npm run dev:api                             # Python API on :8787 over an embedded, seeded PostgreSQL (no keys)
+npm run dev --workspace=@evidenceos/frontend   # Vite dev server (proxies /api to :8787)
+npm run typecheck   # tsc -b and mypy (strict)
+npm run lint        # eslint and ruff
+npm test            # pytest (backend) then vitest (UI)
+npm run test:backend / npm run test:ui
+npm run build       # tsc -b && vite build
+npm run harness     # ruff, mypy, tsc, eslint, pytest, UI tests -> harness-report.json
+npm run db:migrate  # apply database/migrations (needs DATABASE_URL)
+node scripts/py.mjs -m pytest tests/test_agents.py        # single backend test file (cwd is backend/)
+node scripts/py.mjs -m pytest -k "name"                   # single backend test by name
+npm run test --workspace=@evidenceos/frontend -- tests/unit/foo.test.ts   # single UI test file
 ```
 
-Requires Node 20.19+ (or 22.12+). `npm run harness` runs static checks, unit, contracts, golden and e2e stages and writes `harness-report.json` (hard-rule failures, semantic regressions, infrastructure failures and model variance are reported separately).
+Requires Node 20.19+ (or 22.12+) and Python 3.11+. Backend tests need no external database (an embedded PostgreSQL 16 starts per session; it needs free disk space for its WAL). `EVIDENCEOS_PYTHON` overrides the interpreter that `scripts/py.mjs` uses. `npm run harness` writes `harness-report.json` (hard-rule failures, semantic regressions, infrastructure failures and model variance are reported separately; pytest markers `hard`, `variance`, `failure` drive the classification).
 
 ## Architecture / process
 
 - `EvidenceOS_COMPLETE_PACKAGE/` holds the specs. Work is defined by `implementation-prompts/01..22-*.md`, built **in order** (see its README). `agents.md` is the operating constitution: read the relevant specs before coding, don't invent requirements, report spec conflicts rather than silently choosing, keep scope to the current prompt.
 - Core principle: LLMs interpret; evidence grounds; structured state is memory; deterministic rules control; humans interpret. LLM output must never be the source of truth, persisted silently, or bypass validation.
 - **Approved deviation (ADR-010, 2026-10-06): the PostgreSQL database in `database/migrations/`, accessed through this repository's HTTP API, is the system of record for now; Momen is deferred.** Original rule: Momen is the backend of record. Do not add a parallel app database or a browser-accessible admin-token proxy. Momen credentials are server-only: never put them in `VITE_*` vars or commit them; only endpoint URLs are public client config (`frontend/src/config/momen.ts` validates them). Copy `.env.example` to `.env.local`.
-- Frontend tests are organized under `frontend/tests/{unit,contracts,golden,harness,e2e}`.
-- Code layout (`frontend/src`, despite the name much of it is server-side logic):
-  - `api/` — `contracts.ts` (types, enums, validators, `ApiResult`) and `operations.ts` (owner-scoped, idempotent persistence over an injected `Database {query}`; never import from browser code). Documented in `docs/api-contracts.md`.
-  - `workflow/` — LangGraph `StateGraph` (`graph.ts`) with explicit serializable `InvestigationState`, per-node bounded retries (`DEFAULT_MAX_RETRIES`), and trace entries; `types.ts` defines `WORKFLOW_NODES`, `WorkflowError`, and transient-vs-deterministic failures (only transient ones are retried). `placeholderHandlers` are no-ops that fabricate nothing.
-  - `agents/` — `llm.ts` is the provider-neutral `LlmClient` boundary plus validation helpers (`Validation`, `unauthorizedFields`); each agent (`claimDecomposer.ts`, `researchAgent.ts`) treats model output as untrusted JSON: schema check, then deterministic rules, before it becomes state.
-  - `database/migrations/001_initial_schema.sql` is the PostgreSQL schema (provisional; assumptions in `database/PROVISIONAL_DATA_MODEL.md`). Tests run it on PGlite, no external DB needed.
-  - `server/` — HTTP app (`app.ts`, `http.ts`), env config (`config.ts`) and production adapters (`adapters/`: Anthropic, Tavily, PostgreSQL, recorded demo corpus); deployed as a Vercel function from `api/[...path].ts`. `gateway/` is the browser-side client; UI is in `pages/`, `components/`, `graph/`. `demo/corpus.json` plus `npm run demo:seed|demo:advance` drive the demo. Note the open Momen-vs-direct-PostgreSQL question in the progress log.
-- Tests use `tests/helpers/scriptedLlm.ts` (scripted fake LLM) for agent tests; `tests/golden/` holds agent behavior contracts. `scripts/check-momen.mjs` (`npm run momen:check`) probes the Momen endpoint using `.env.local`.
+- Backend layout (`backend/evidenceos`, Python): `contracts.py` (enums, validators, `ApiResult`), `operations.py` (owner-scoped, idempotent persistence over an injected async `Database.query`; SQL uses `$1`-style placeholders translated by `db.py`), `agents/` (provider-neutral `LlmClient`, then the four agents; model output is untrusted JSON: schema check, then deterministic rules), `validation/rules.py` (hard rules, stable rule ids), `workflow/` (LangGraph `StateGraph` with explicit state, per-node bounded retries, `WORKFLOW_NODES`, transient-vs-deterministic failures), `server/` (`http.py` framework-agnostic handler, `app.py` FastAPI composition root, `config.py`, `seed.py`, `adapters/` for Anthropic, Tavily and the recorded demo corpus), `cli/` (migrate, seed, demo, devserver). Documented in `docs/api-contracts.md` and `docs/engineering/API_CONTRACTS.md`.
+- `database/migrations/001_initial_schema.sql` is the PostgreSQL schema (provisional; assumptions in `database/PROVISIONAL_DATA_MODEL.md`); the backend tests apply it to a real PostgreSQL, so triggers and constraints are exercised.
+- UI layout (`frontend/src`): `pages/`, `components/`, `graph/`, `gateway/` (browser client of the HTTP API), `api/contracts.ts` (browser-side wire types only, no rules). The UI never computes a claim state. `frontend/tests/fixtures/wire.json` pins record shapes; `backend/tests/test_wire_contract.py` and `frontend/tests/unit/wire.test.ts` both assert it, so change it on both sides together.
+- Deployment entry: `api/index.py` (Vercel Python Function) wraps `create_app()`; `requirements.txt` (root) pins runtime dependencies for Vercel and `backend/pyproject.toml` holds dev tools. `demo/corpus.json` plus `npm run demo:seed|demo:advance|seed|seed:advance` drive the demo.
+- Tests: `backend/tests/` (pytest; `tests/helpers.py` has the scripted/fixture LLM doubles; markers `hard`, `variance`, `failure`) and `frontend/tests/` (UI only, against `tests/helpers/fakeBackend.ts`). `scripts/check-momen.mjs` (`npm run momen:check`) probes the Momen endpoint using `.env.local`.
 - System design: `EvidenceOS_COMPLETE_PACKAGE/implementation-prompts/system dessign.md` is the target architecture (lifecycle, state ownership, invariants I-001..I-015, anti-patterns). Check new work against it and its §58 invariants. Conformance status and open items are tracked in `IMPLEMENTATION_PROGRESS.md` ("System-design conformance review"). Open as of 2026-10-06: workflow not resumable from durable state (§48); no live Momen connection, and the server talks to PostgreSQL directly, which conflicts with the Momen-as-backend rule and needs an explicit decision (§4). Stale-write protection is enforced by DB triggers; the `UNKNOWN` strength was removed and evidence `reasoning` added. `npm run harness` now runs (unit/contracts/golden/e2e) and must pass.
 - Engineering-control docs (they inform decisions but never override the PRD or the core invariants; they describe the code as built, so update them when behavior changes): security `docs/security/THREAT_MODEL.md`, `docs/security/AI_SAFETY.md`; operations `docs/operations/{OBSERVABILITY,DATA_RETENTION,COST_MODEL,PERFORMANCE}.md`; contracts `docs/engineering/API_CONTRACTS.md`; decisions `docs/adr/` (ADR-010 records the approved PostgreSQL-direct backend; Momen is deferred and ADR-005 is superseded); machine-readable summary `PROJECT_MANIFEST.yaml`; index `docs/README.md`.
 - The long "Operating Constitution" below is the authoritative behavioral contract; the sections above are the practical summary.

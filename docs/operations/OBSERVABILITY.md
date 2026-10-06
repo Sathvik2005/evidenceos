@@ -23,7 +23,7 @@ The LangGraph state carries an append-only `trace` of node outcomes and a `failu
 
 ## Logging
 
-Implemented in `frontend/src/server/app.ts` and `http.ts`: one JSON line per event on stdout (collected by the hosting platform).
+Implemented in `backend/evidenceos/server/app.py` and `http.py`: one JSON line per event on stdout (collected by the hosting platform).
 
 | Event | Fields |
 | --- | --- |

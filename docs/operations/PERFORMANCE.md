@@ -12,7 +12,7 @@ No formal benchmark has yet been established. Nothing below is a measured number
 ## Backend
 
 - **API latency:** reads are indexed lookups scoped by owner and investigation. Indexes exist on investigation owner/created and status/created, claims by investigation/state, sources by investigation/type, evidence by claim/created and by source, and changes by claim/changed time. Not measured.
-- **Workflow startup:** the API returns `201` immediately after creating the investigation and claiming the run. The workflow continues after the response (`waitUntil`, up to the function's `maxDuration`).
+- **Workflow startup:** the API returns `201` immediately after creating the investigation and claiming the run. The workflow continues after the response (a FastAPI background task, up to the function's `maxDuration`; whether the host keeps the function alive for it is unverified, see `docs/DEPLOYMENT.md`).
 - **Persistence:** idempotent inserts check for an existing record by idempotency key before writing; claim state changes are applied atomically by a trigger.
 - **Connections:** a small pool (max 5) reused across warm invocations; connection timeout 10 s.
 

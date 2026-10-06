@@ -12,7 +12,7 @@ Model output is probabilistic. Critical invariants (no fabricated provenance, no
 LLM output → structured schema → deterministic validation → persistence
 ```
 
-Every agent returns a closed JSON schema that is checked (unknown fields rejected). A separate rules layer (`frontend/src/validation/rules.ts`) applies hard rules with stable ids. The Evaluator's accept/reject decision is computed in code and a hard-rule failure rejects regardless of its opinion. The database repeats the structural rules (foreign keys, checks, state-change and history triggers).
+Every agent returns a closed JSON schema that is checked (unknown fields rejected). A separate rules layer (`backend/evidenceos/validation/rules.py`) applies hard rules with stable ids. The Evaluator's accept/reject decision is computed in code and a hard-rule failure rejects regardless of its opinion. The database repeats the structural rules (foreign keys, checks, state-change and history triggers).
 
 ## Alternatives Considered
 

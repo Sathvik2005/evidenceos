@@ -1,14 +1,16 @@
 # Deployment (Vercel + PostgreSQL)
 
-Status: the configuration is written and tested locally. The database path was verified on 2026-10-06 against a hosted
-Supabase PostgreSQL: use the **Session pooler** connection string, because the direct `db.<ref>.supabase.co` host is
-IPv6-only and fails on IPv4-only networks. The Vercel deployment and live Anthropic/Tavily runs have **not** been done;
-use the smoke test below to verify them.
+Status: the configuration is written and tested locally. On 2026-10-06 the earlier TypeScript backend's database path was
+verified against a hosted Supabase PostgreSQL: use the **Session pooler** connection string, because the direct
+`db.<ref>.supabase.co` host is IPv6-only and fails on IPv4-only networks. The backend has since been replaced by the Python
+implementation ([ADR-011](adr/ADR-011-python-backend.md)); **its** connection to hosted PostgreSQL (psycopg, with prepared
+statements disabled so poolers work), the Vercel Python Function and live Anthropic/Tavily runs have **not** been verified.
+Use the smoke test below.
 
 ## What gets deployed
 
 - **Frontend**: `npm run build` → `frontend/dist`, served by Vercel (`vercel.json` also sends non-API paths to `index.html`).
-- **API**: the Vercel Function `api/[...path].ts` (Node runtime) handling `/api/*`. Research runs after the response using `waitUntil`, with `maxDuration` 300 s (check your plan's limit).
+- **API**: the Vercel Python Function `api/index.py` (FastAPI, Python runtime) handling `/api/*`; dependencies come from the root `requirements.txt` and the package from `backend/evidenceos` (`includeFiles`). Research runs as a FastAPI background task after the response, with `maxDuration` 300 s (check your plan's limit). **Unverified:** whether Vercel keeps the Python function alive until background tasks finish. If it does not, a run is cut off; the investigation then stays `RESEARCHING` until the stale-run takeover (10 minutes) and `POST /api/investigations/:id/refresh` resumes it idempotently. If that proves unreliable, run the same ASGI app (`evidenceos.server.app:create_app`) on a host that keeps processes alive.
 - **Database**: any PostgreSQL 15+ reachable from Vercel (for example a Vercel-marketplace Postgres, Neon or Supabase). Set `DATABASE_URL`.
 - **Momen**: not used by the application today ([`ARCHITECTURE.md`](ARCHITECTURE.md), deviation 1).
 

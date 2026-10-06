@@ -1,0 +1,8 @@
+# Runtime dependencies of the Python backend, pinned for reproducible Vercel builds.
+# Development tools (pytest, ruff, mypy, pgserver) live in backend/pyproject.toml under [dev].
+fastapi==0.142.2
+psycopg[binary,pool]==3.3.6
+psycopg-pool==3.3.3
+langgraph==1.2.14
+anthropic==1.11.0
+httpx==0.28.1

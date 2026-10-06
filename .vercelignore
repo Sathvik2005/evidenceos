@@ -1,4 +1,4 @@
-# Not needed at build or run time on Vercel
+# Not needed at build or run time on Vercel. backend/evidenceos IS needed (the Python API), so it is not listed.
 .data/
 .env*
 EvidenceOS_COMPLETE_PACKAGE/
@@ -6,8 +6,10 @@ harness-report.json
 frontend/tests/
 docs/
 demo/
-scripts/dev-server.mts
-scripts/demo.mts
-scripts/seed.mts
-scripts/seed-advance.mjs
-backend/
+scripts/
+backend/tests/
+backend/.venv/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/.mypy_cache/
+**/__pycache__/

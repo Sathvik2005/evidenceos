@@ -8,7 +8,7 @@ The target architecture and `CLAUDE.md` name Momen as the backend of record. Mom
 
 ## Decision
 
-The HTTP API in this repository (`frontend/src/server`, served by the Vercel Function `api/[...path].ts`) is the approved backend. It talks to PostgreSQL directly through typed, owner-scoped operations (`frontend/src/api/operations.ts`). Momen is **out of scope for now**; it remains a possible future platform if an export and actions are provided.
+The HTTP API in this repository (`backend/evidenceos/server`, served by the Vercel Python Function `api/index.py`) is the approved backend. It talks to PostgreSQL directly through typed, owner-scoped operations (`backend/evidenceos/operations.py`). Momen is **out of scope for now**; it remains a possible future platform if an export and actions are provided.
 
 ## Alternatives Considered
 

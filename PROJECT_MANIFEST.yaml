@@ -5,12 +5,12 @@ project:
   stage: hackathon
   tagline: "Build evidence. Track change. Understand what holds up."
   implementation_prompts_built: "01-22"
-  seeded_demo: "npm run dev:api (local, PGlite, no keys) or npm run seed (DATABASE_URL); see docs/DEMO.md"
+  seeded_demo: "npm run dev:api (local, embedded PostgreSQL, no keys) or npm run seed (DATABASE_URL); see docs/DEMO.md"
   spec_status: "Authoritative specs other than agents.md and system design are not in the repository"
 
 frontend:
   framework: React 19
-  language: TypeScript (strict)
+  language: TypeScript (strict), UI only
   build: Vite
   styling: hand-written CSS tokens (no Tailwind, no shadcn/ui)
   routes: [/, /investigations/new, /investigations/:id, /investigations/:id/claims/:claimId, /investigations/:id/graph]
@@ -20,19 +20,21 @@ frontend:
 
 backend:
   platform: none    # the API is served directly by this repository
-  api: "HTTP JSON API in frontend/src/server, exposed by the Vercel Function api/[...path].ts"
+  language: Python 3.11+ (ADR-011)
+  framework: FastAPI
+  api: "HTTP JSON API in backend/evidenceos/server, exposed by the Vercel Python Function api/index.py"
   momen:
     status: not_connected
     note: "Momen is deferred: PostgreSQL-direct was approved on 2026-10-06 (docs/adr/ADR-010, supersedes ADR-005). No Momen export or actions exist."
 
 workflow:
-  framework: LangGraph
+  framework: LangGraph (Python)
   checkpointer: in_memory      # not durable; recovery is an idempotent re-run plus stale-run takeover
   resumable_from_checkpoint: false
   retries_max: 2
 
 ai:
-  framework: "@langchain/langgraph for orchestration; provider SDK adapters (no LangChain retrieval abstractions)"
+  framework: "LangGraph for orchestration; provider SDK adapters (anthropic, httpx); no LangChain retrieval abstractions"
   llm_provider: Anthropic
   llm_model_default: claude-sonnet-5-5
   research_provider: Tavily
@@ -40,7 +42,7 @@ ai:
 
 database:
   engine: PostgreSQL
-  access: "pg pool (production), PGlite (tests)"
+  access: "psycopg 3 async pool (production), embedded PostgreSQL 16 via pgserver (tests)"
   migrations: database/migrations
   integrity: [foreign_keys_restrict, check_constraints, state_change_trigger, append_only_history_trigger]
 
@@ -51,7 +53,7 @@ agents:
   - Evaluator
 
 validation:
-  deterministic_rules: frontend/src/validation/rules.ts
+  deterministic_rules: backend/evidenceos/validation/rules.py
   hard_rules_override_evaluator: true
 
 security:
@@ -93,11 +95,13 @@ documentation:
 
 deployment:
   frontend: Vercel (configured, not deployed)
-  api: Vercel Function (configured, not deployed)
+  api: Vercel Python Function api/index.py (configured, not deployed; the Python backend is not yet verified against hosted PostgreSQL or live providers)
   database: "any PostgreSQL 15+ (hosted instance not provisioned by this repository)"
   health_endpoint: /api/health
 
 commands:
+  setup_backend: npm run backend:setup
+  dev_api: npm run dev:api
   typecheck: npm run typecheck
   lint: npm run lint
   test: npm test

@@ -8,7 +8,7 @@ Browser (gateway) ↔ HTTP API (/api) ↔ Application operations ↔ PostgreSQL
                          LangGraph workflow ↔ Agents ↔ Validation ↔ Persistence
 ```
 
-There is **no Momen API** in this chain: PostgreSQL-direct is the approved backend and Momen is deferred ([ADR-010](../adr/ADR-010-postgresql-direct-backend.md), which supersedes [ADR-005](../adr/ADR-005-momen-backend-platform.md)). The HTTP API is served by `frontend/src/server/http.ts` and exposed through the Vercel Function `api/[...path].ts`.
+There is **no Momen API** in this chain: PostgreSQL-direct is the approved backend and Momen is deferred ([ADR-010](../adr/ADR-010-postgresql-direct-backend.md), which supersedes [ADR-005](../adr/ADR-005-momen-backend-platform.md)). The HTTP API is implemented in `backend/evidenceos/server/http.py` (FastAPI) and exposed through the Vercel Function `api/index.py`.
 
 ## Common behavior
 
@@ -61,7 +61,7 @@ Every agent output is untrusted JSON: schema-checked, unknown fields rejected, t
 | Evidence Analyst | A claim plus all validated evidence for it | `{ proposedState, confidence, rationale, evidenceIds, causalStatus, scopeNotes?, uncertainties? }`; cited ids must exist, every `CONTRADICTS` item must be cited, a non-`INSUFFICIENT` state must cite evidence | Add evidence, cite unknown ids, drop contradictions |
 | Evaluator | A hard-rule-valid assessment plus its evidence | `{ scores: { evidenceQuality, grounding, contradictionHandling, stateJustification, uncertaintyHandling }, criticalFailures, findings }`, each score 0–2 | Research, add or alter evidence; its accept/reject is computed in code and cannot override a hard-rule failure |
 
-Hard rules live in `frontend/src/validation/rules.ts` with stable rule ids, for example `EVIDENCE_CLAIM_MISMATCH`, `PROVENANCE_MISSING`, `FABRICATED_SOURCE`, `FABRICATED_EXCERPT`, `SUPPORTED_WITHOUT_SUPPORT`, `SUPPORTED_DESPITE_CONTRADICTION`, `CONFLICT_WITHOUT_BOTH_SIDES`, `CONTRADICTION_OMITTED`, `CITED_EVIDENCE_FOREIGN_CLAIM`, `CONFIDENCE_UNSUPPORTED`, `CAUSATION_UNSUPPORTED`, `CHANGE_TRIGGER_NOT_NEW`, `CHANGE_NO_DIFFERENCE`.
+Hard rules live in `backend/evidenceos/validation/rules.py` with stable rule ids, for example `EVIDENCE_CLAIM_MISMATCH`, `PROVENANCE_MISSING`, `FABRICATED_SOURCE`, `FABRICATED_EXCERPT`, `SUPPORTED_WITHOUT_SUPPORT`, `SUPPORTED_DESPITE_CONTRADICTION`, `CONFLICT_WITHOUT_BOTH_SIDES`, `CONTRADICTION_OMITTED`, `CITED_EVIDENCE_FOREIGN_CLAIM`, `CONFIDENCE_UNSUPPORTED`, `CAUSATION_UNSUPPORTED`, `CHANGE_TRIGGER_NOT_NEW`, `CHANGE_NO_DIFFERENCE`.
 
 ## Provider boundaries
 
@@ -69,4 +69,4 @@ Hard rules live in `frontend/src/validation/rules.ts` with stable rule ids, for 
 
 ## Tests
 
-Contract tests: `frontend/tests/contracts/` (operations, HTTP API, server adapters). Agent schemas and rules: `tests/golden/`, `tests/unit/validation-rules.test.ts`. Run `npm run test:contracts`.
+Contract tests: `backend/tests/` (`test_operations.py`, `test_http_api.py`, `test_adapters.py`, `test_data_model.py`, `test_wire_contract.py`). Agent schemas and rules: `test_agents.py`, `test_rules.py`, `test_golden_dataset.py`. Run `npm run test:backend`. The record shapes the browser expects are pinned in `frontend/tests/fixtures/wire.json` and asserted on both sides.

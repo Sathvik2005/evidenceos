@@ -34,6 +34,7 @@ class PsycopgDatabase:
     """A small async pool. Autocommit: each statement is its own transaction, so triggers see one statement."""
 
     def __init__(self, conninfo: str, *, max_size: int = 5) -> None:
+        self._opened = False
         self._pool = AsyncConnectionPool(
             conninfo,
             min_size=1,
@@ -47,8 +48,12 @@ class PsycopgDatabase:
 
     async def open(self) -> None:
         await self._pool.open()
+        self._opened = True
 
     async def query(self, sql: str, params: Sequence[Any] | None = None) -> list[dict[str, Any]]:
+        # Opened on first use: serverless hosts do not always run application startup hooks.
+        if not self._opened:
+            await self.open()
         text, values = translate(sql, params)
         async with self._pool.connection() as conn:
             cur = await conn.execute(text, values)

@@ -4,7 +4,8 @@
 
 **Build evidence. Track change. Understand what holds up.**
 
-![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![LangGraph](https://img.shields.io/badge/LangGraph-workflow-1C3C3C)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-state-4169E1?logo=postgresql&logoColor=white)
@@ -47,7 +48,7 @@ Question → Claims → Research (real sources) → Evidence → Validation → 
 
 ```mermaid
 flowchart LR
-  B[Browser<br/>React + Vite] -->|same-origin /api| F[Vercel Function<br/>HTTP API]
+  B[Browser<br/>React + Vite] -->|same-origin /api| F[Python API<br/>FastAPI]
   F --> O[Typed, owner-scoped<br/>operations]
   F -->|starts| W[LangGraph workflow]
   W --> A1[Claim Decomposer]
@@ -67,12 +68,13 @@ More diagrams (workflow, state change, data model, provenance) are in [`docs/DIA
 
 | Layer | Technology |
 | --- | --- |
-| UI | React 19, Vite, strict TypeScript, hand-written CSS tokens (light and dark) |
-| Workflow | LangGraph (`@langchain/langgraph`) |
+| Backend | Python 3.11+, FastAPI, strict typing (mypy) and ruff |
+| Workflow | LangGraph for Python |
 | Models and retrieval | Anthropic SDK, Tavily (behind provider-neutral interfaces) |
-| Data | PostgreSQL via `pg`; PGlite for tests |
-| Hosting | Vercel (configured, not yet deployed) |
-| Quality | Vitest, Testing Library, custom harness |
+| Data | PostgreSQL via `psycopg` 3; tests run on a real embedded PostgreSQL 16 |
+| UI | React 19, Vite, strict TypeScript, hand-written CSS tokens (light and dark) |
+| Hosting | Vercel: static UI plus a Python Function (configured, not yet deployed) |
+| Quality | pytest, Vitest, Testing Library, custom harness |
 
 ## Demo
 
@@ -83,14 +85,16 @@ The demo question is **“Does remote learning improve student outcomes?”** ov
 ## Project structure
 
 ```text
-api/                 Vercel Function entry (/api/*)
-frontend/src/
+api/index.py         Vercel Python Function entry (/api/*)
+backend/evidenceos/  The backend (Python)
   agents/            Claim Decomposer, Research, Evidence Analyst, Evaluator
   validation/        Deterministic hard rules
   workflow/          LangGraph graph, node handlers, retries
-  api/               Typed contracts and owner-scoped operations
-  server/            HTTP app, config, adapters (Anthropic, Tavily, PostgreSQL)
-  pages/ components/ graph/ gateway/   UI and browser client
+  operations.py      Owner-scoped, idempotent persistence operations
+  server/            FastAPI app, HTTP handling, config, adapters (Anthropic, Tavily, recorded demo)
+  cli/               migrate, seed, demo and the local dev server
+backend/tests/       pytest suite (real PostgreSQL)
+frontend/src/        The UI: pages, components, graph, gateway (browser client)
 database/migrations/ PostgreSQL schema
 demo/                Recorded, verified source corpus
 scripts/             Harness, migrations, demo driver, Momen endpoint probe
@@ -99,18 +103,19 @@ docs/                Architecture, deployment, security, operations, ADRs, audit
 
 ## Getting started
 
-Requires Node.js 20.19+ (or 22.12+).
+Requires Node.js 20.19+ (or 22.12+) for the UI and Python 3.11+ for the backend.
 
 ```sh
 npm install
-npm run harness      # typecheck, lint, unit, contracts, golden, e2e (in-memory PostgreSQL; no services needed)
+npm run backend:setup   # creates backend/.venv and installs the backend with its dev tools
+npm run harness         # ruff, mypy, tsc, eslint, pytest (real PostgreSQL, embedded) and the UI tests
 npm run build
 ```
 
 **Run the seeded demo locally (no keys, no database server):**
 
 ```sh
-npm run dev:api                                  # terminal 1: real API over a local file-backed PostgreSQL (PGlite), auto-seeded
+npm run dev:api                                  # terminal 1: the real Python API over an embedded local PostgreSQL, auto-seeded
 npm run dev --workspace=@evidenceos/frontend     # terminal 2: UI on http://localhost:5173 (proxies /api)
 npm run seed:advance                             # reveal the seeded "new evidence": PARTIALLY SUPPORTED → CONFLICTING
 ```
@@ -125,7 +130,7 @@ ANTHROPIC_API_KEY=...                                         # from console.ant
 TAVILY_API_KEY=...                                            # from app.tavily.com
 ```
 
-Then `node --env-file=.env.local scripts/migrate.mjs` to create the schema. On Vercel, set the same variables in Project Settings and see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the smoke test. Live providers have not been exercised yet.
+Then `node --env-file=.env.local scripts/py.mjs -m evidenceos.cli.migrate` (or `npm run db:migrate` with `DATABASE_URL` exported) to create the schema. On Vercel, set the same variables in Project Settings and see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the smoke test. Live providers have not been exercised yet.
 
 ## Engineering principles
 
@@ -137,7 +142,7 @@ Then `node --env-file=.env.local scripts/migrate.mjs` to create the schema. On V
 
 ## Status
 
-🧪 **Experimental MVP.** The automated suite and 10 failure-injection cases pass (`npm run harness`), and the seeded demo runs end to end locally and against a hosted Supabase PostgreSQL (migration, seed, database-enforced history rules and API reads verified over the real `pg` driver). It has **not** yet been deployed, or run against live Anthropic or Tavily. The authoritative spec files other than `agents.md` and the system design are not in this repository, and Momen is deferred ([ADR-010](docs/adr/ADR-010-postgresql-direct-backend.md)). There are no accounts or rate limits yet. Full audit: [`docs/FINAL_AUDIT.md`](docs/FINAL_AUDIT.md).
+🧪 **Experimental MVP.** The automated suite (171 backend tests on a real PostgreSQL 16, 26 UI tests) and 10 failure-injection cases pass (`npm run harness`), and the seeded demo runs end to end locally. The backend was ported from TypeScript to Python ([ADR-011](docs/adr/ADR-011-python-backend.md)); the earlier TypeScript backend had been verified against a hosted Supabase PostgreSQL, but the Python backend has **not** yet been run against hosted PostgreSQL, deployed to Vercel, or run against live Anthropic or Tavily. The authoritative spec files other than `agents.md` and the system design are not in this repository, and Momen is deferred ([ADR-010](docs/adr/ADR-010-postgresql-direct-backend.md)). There are no accounts or rate limits yet. Full audit: [`docs/FINAL_AUDIT.md`](docs/FINAL_AUDIT.md).
 
 ## Roadmap
 

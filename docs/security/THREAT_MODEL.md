@@ -7,7 +7,7 @@ Scope: EvidenceOS as built in this repository. Where the target architecture dif
 ```text
 Browser (React SPA)
    ↓  same-origin JSON, anonymous HttpOnly cookie
-Vercel (static frontend + Function api/[...path].ts)
+Vercel (static frontend + Python Function api/index.py)
    ↓  SQL over TLS (DATABASE_URL)            ↓ HTTPS
 PostgreSQL                          Anthropic (LLM) · Tavily (retrieval)
 ```

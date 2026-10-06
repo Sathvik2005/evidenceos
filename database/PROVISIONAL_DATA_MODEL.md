@@ -48,5 +48,5 @@ data-model specification.
 ## Verification boundary
 
 The migration is executable against PostgreSQL-compatible engines and is tested
-locally with PGlite. It has not been synchronized to Momen or verified against
+locally on PostgreSQL 16 (embedded for the tests). It has not been synchronized to Momen or verified against
 the live Momen schema because no Momen project/workspace export is available.

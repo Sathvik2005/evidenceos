@@ -16,5 +16,6 @@ A status is `Accepted` only when the repository actually reflects the decision. 
 | [ADR-008](ADR-008-state-vs-confidence.md) | State and confidence are separate | Accepted |
 | [ADR-009](ADR-009-immutable-evidence-history.md) | Immutable evidence history | Accepted |
 | [ADR-010](ADR-010-postgresql-direct-backend.md) | PostgreSQL-direct backend; Momen deferred | Accepted (owner-approved 2026-10-06) |
+| [ADR-011](ADR-011-python-backend.md) | The backend is implemented in Python | Accepted (owner request, 2026-10-06) |
 
 ADR-005 was never `Accepted` because the code does not use Momen; it is superseded by ADR-010, which records the approved decision.
