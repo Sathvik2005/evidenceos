@@ -1,5 +1,5 @@
 // Typed, serializable workflow contracts (Prompt 05). Domain enums come from the API contracts.
-import type { ClaimState, ConfidenceLevel, EvidenceRelationship, EvidenceStrength } from '../api/contracts'
+import type { ClaimState, ConfidenceLevel, EvidenceRelationship, EvidenceStrength, SourceType } from '../api/contracts'
 
 export const WORKFLOW_NODES = [
   'load',
@@ -75,6 +75,10 @@ export interface WorkflowClaim {
 export interface EvidenceCandidate {
   readonly sourceUrl: string
   readonly sourceTitle: string
+  readonly sourceType: SourceType
+  readonly publisher: string | null
+  readonly publishedAt: string | null
+  readonly retrievedAt: string
   readonly excerpt: string
   readonly relationship: EvidenceRelationship
   readonly strength: EvidenceStrength

@@ -60,3 +60,15 @@ export async function runStructured<T>(
   }
   throw last
 }
+
+/** Retries only transient failures, at most `maxRetries` times; everything else propagates. */
+export async function retryTransient<T>(operation: () => Promise<T>, maxRetries: number = DEFAULT_MAX_RETRIES): Promise<T> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await operation()
+    } catch (error) {
+      const retryable = error instanceof WorkflowError && TRANSIENT_FAILURES.has(error.kind) && attempt <= maxRetries
+      if (!retryable) throw error
+    }
+  }
+}
