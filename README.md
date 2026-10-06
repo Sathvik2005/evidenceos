@@ -137,7 +137,7 @@ Then `node --env-file=.env.local scripts/migrate.mjs` to create the schema. On V
 
 ## Status
 
-🧪 **Experimental MVP.** The automated suite and 10 failure-injection cases pass (`npm run harness`), and the seeded demo runs end to end locally. It has **not** yet been deployed, or run against live Anthropic, Tavily or a hosted database. The authoritative spec files other than `agents.md` and the system design are not in this repository, and Momen is deferred ([ADR-010](docs/adr/ADR-010-postgresql-direct-backend.md)). There are no accounts or rate limits yet. Full audit: [`docs/FINAL_AUDIT.md`](docs/FINAL_AUDIT.md).
+🧪 **Experimental MVP.** The automated suite and 10 failure-injection cases pass (`npm run harness`), and the seeded demo runs end to end locally and against a hosted Supabase PostgreSQL (migration, seed, database-enforced history rules and API reads verified over the real `pg` driver). It has **not** yet been deployed, or run against live Anthropic or Tavily. The authoritative spec files other than `agents.md` and the system design are not in this repository, and Momen is deferred ([ADR-010](docs/adr/ADR-010-postgresql-direct-backend.md)). There are no accounts or rate limits yet. Full audit: [`docs/FINAL_AUDIT.md`](docs/FINAL_AUDIT.md).
 
 ## Roadmap
 
