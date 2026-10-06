@@ -1,0 +1,35 @@
+{
+  "note": "Recorded retrieval: text is the exact passage copied from each page on 2026-10-06 (verified verbatim in a second fetch). Not full pages.",
+  "documents": [
+    {
+      "phase": 1,
+      "url": "https://www.sri.com/publication/education-learning-pubs/digital-learning-pubs/evaluation-of-evidence-based-practices-in-online-learning-a-meta-analysis-and-review-of-online-learning-studies/",
+      "title": "Evaluation of Evidence-Based Practices in Online Learning: A Meta-Analysis and Review of Online Learning Studies",
+      "sourceType": "REPORT",
+      "publisher": "SRI International (U.S. Department of Education report); Means, Toyama, Murphy, Bakia and Jones",
+      "publishedAt": "2010-01-01T00:00:00.000Z",
+      "text": "The meta-analysis found that, on average, students in online learning conditions performed modestly better than those receiving face-to-face instruction. The studies reviewed covered the period 1996 through July 2008.",
+      "retrievedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "phase": 2,
+      "url": "https://www.educationnext.org/zooming-to-class-slows-student-learning/",
+      "title": "Zooming to Class Slows Student Learning",
+      "sourceType": "WEB_PAGE",
+      "publisher": "Education Next; Kofoed, Gebhart, Gilmore and Moschitto",
+      "publishedAt": "2024-09-17T00:00:00.000Z",
+      "text": "Online instruction reduces a student's final grade by 22 percent of a standard deviation, or about 1.7 percentage points—equivalent to declining to a B+ from an A–.",
+      "retrievedAt": "2026-10-06T00:00:00.000Z"
+    },
+    {
+      "phase": 2,
+      "url": "https://www.nber.org/digest/202201/remote-schooling-and-standardized-test-scores",
+      "title": "Remote Schooling and Standardized Test Scores",
+      "sourceType": "REPORT",
+      "publisher": "NBER Digest; Halloran, Jack, Okun and Oster",
+      "publishedAt": "2022-01-03T00:00:00.000Z",
+      "text": "Students who spent a higher fraction of the COVID-19 pandemic receiving in-person instruction performed significantly better on standardized tests in the spring of 2021 than those who were taught mostly remotely. Pass rates among students in all types of learning environments were lower in the spring of 2021 than in previous years. The average decline in math scores was 14.2 percentage points. For students who were fully in person for the 2020–2021 school year, the decline was smaller, 4.1 percentage points.",
+      "retrievedAt": "2026-10-06T00:00:00.000Z"
+    }
+  ]
+}
