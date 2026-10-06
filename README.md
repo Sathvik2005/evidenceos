@@ -61,6 +61,8 @@ flowchart LR
   O --> P[(PostgreSQL<br/>claims · evidence · sources · history)]
 ```
 
+More diagrams (workflow, state change, data model, provenance) are in [`docs/DIAGRAMS.md`](docs/DIAGRAMS.md); trust boundaries and deviations are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
 ## Tech stack
 
 | Layer | Technology |
