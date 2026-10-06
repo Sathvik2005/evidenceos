@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "test:contracts": "vitest run tests/contracts",
+    "test:golden": "vitest run tests/golden",
+    "test:e2e": "vitest run tests/e2e"
   },
   "dependencies": {
     "@langchain/langgraph": "^1.4.19",

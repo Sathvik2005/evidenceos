@@ -10,6 +10,9 @@
     "lint": "npm run lint --workspace=@evidenceos/frontend",
     "test": "npm run test --workspace=@evidenceos/frontend",
     "typecheck": "npm run typecheck --workspace=@evidenceos/frontend",
-    "momen:check": "node --env-file=.env.local scripts/check-momen.mjs"
+    "momen:check": "node --env-file=.env.local scripts/check-momen.mjs",
+    "test:contracts": "npm run test:contracts --workspace=@evidenceos/frontend",
+    "test:golden": "npm run test:golden --workspace=@evidenceos/frontend",
+    "test:e2e": "npm run test:e2e --workspace=@evidenceos/frontend"
   }
 }
