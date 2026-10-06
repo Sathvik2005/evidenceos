@@ -7,6 +7,7 @@ isolated and the migrations run once.
 from __future__ import annotations
 
 import itertools
+import shutil
 import tempfile
 from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
@@ -38,6 +39,7 @@ def pg_uri() -> Iterator[str]:
             conn.execute(path.read_text(encoding="utf-8"))
     yield admin
     server.cleanup()
+    shutil.rmtree(data, ignore_errors=True)  # the WAL alone is tens of MB; never leave data directories behind
 
 
 async def create_test_database(pg_uri: str) -> tuple[PsycopgDatabase, str]:
