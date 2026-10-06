@@ -13,6 +13,8 @@ export interface ApiDeps {
   /** When set, this investigation (owned by demoOwnerId) is readable, never writable, by everyone. */
   readonly demo?: { readonly investigationId: string; readonly ownerId: string }
   readonly secureCookies?: boolean
+  /** False when model or retrieval credentials are missing: runs are refused up front, honestly. */
+  readonly researchAvailable?: boolean
   readonly log?: (entry: Record<string, unknown>) => void
 }
 
@@ -128,6 +130,7 @@ export async function handleApiRequest(request: Request, deps: ApiDeps): Promise
     // POST /investigations
     if (segments.length === 1) {
       if (!isWrite) return respond(json(405, { error: { code: 'VALIDATION_FAILED', message: 'Method not allowed.' } }, cookie))
+      if (deps.researchAvailable === false) return respond(json(503, { error: { code: 'INTERNAL_ERROR', message: 'Research is not configured on this server, so new investigations cannot run.' } }, cookie))
       const body = await readJson(request)
       if (!body.ok) return respond(apiError(body.error, cookie))
       const result = await createInvestigation(deps.db, ownerId, {
@@ -149,6 +152,7 @@ export async function handleApiRequest(request: Request, deps: ApiDeps): Promise
 
     if (resource === 'refresh') {
       if (!isWrite) return respond(json(405, { error: { code: 'VALIDATION_FAILED', message: 'Method not allowed.' } }, cookie))
+      if (deps.researchAvailable === false) return respond(json(503, { error: { code: 'INTERNAL_ERROR', message: 'Research is not configured on this server.' } }, cookie))
       // Atomic: only one run can be claimed; a busy investigation is refused, not double-started.
       const claimed = await claimInvestigationRun(deps.db, ownerId, id, ['READY', 'REVIEW_REQUIRED', 'ERROR'])
       if (!claimed.ok) return respond(apiError(claimed.error, cookie))

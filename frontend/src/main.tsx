@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App'
 import { GatewayProvider } from './gateway/GatewayProvider'
+import { createHttpGateway } from './gateway/httpGateway'
 
 const rootElement = document.getElementById('root')
 
@@ -11,12 +12,13 @@ if (!rootElement) {
   throw new Error('The application root element is missing.')
 }
 
-// No live backend adapter exists yet (the Momen schema is not available), so the gateway is
-// absent and screens report that honestly instead of showing invented data.
+// The browser talks only to the same-origin EvidenceOS API; the server owns identity and credentials.
+const gateway = createHttpGateway('/api')
+
 createRoot(rootElement).render(
   <StrictMode>
     <BrowserRouter>
-      <GatewayProvider gateway={null}>
+      <GatewayProvider gateway={gateway}>
         <App />
       </GatewayProvider>
     </BrowserRouter>

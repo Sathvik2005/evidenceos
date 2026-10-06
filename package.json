@@ -13,6 +13,7 @@
     "momen:check": "node --env-file=.env.local scripts/check-momen.mjs",
     "test:contracts": "npm run test:contracts --workspace=@evidenceos/frontend",
     "test:golden": "npm run test:golden --workspace=@evidenceos/frontend",
-    "test:e2e": "npm run test:e2e --workspace=@evidenceos/frontend"
+    "test:e2e": "npm run test:e2e --workspace=@evidenceos/frontend",
+    "db:migrate": "node scripts/migrate.mjs"
   }
 }
