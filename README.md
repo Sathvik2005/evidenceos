@@ -117,7 +117,15 @@ npm run seed:advance                             # reveal the seeded "new eviden
 
 Open the app and choose **View the demo investigation**. New investigations are refused in this mode (research needs model and search keys). Delete `.data/` to start over.
 
-**Run with live research:** needs a PostgreSQL database and provider keys; see [`.env.example`](.env.example), then `npm run db:migrate`. Deployment and the smoke test: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+**Run with live research:** copy [`.env.example`](.env.example) to `.env.local` (git-ignored) and set server-side values only, never with a `VITE_` prefix:
+
+```sh
+DATABASE_URL=postgres://user:password@host/db?sslmode=require   # any PostgreSQL 15+
+ANTHROPIC_API_KEY=...                                         # from console.anthropic.com
+TAVILY_API_KEY=...                                            # from app.tavily.com
+```
+
+Then `node --env-file=.env.local scripts/migrate.mjs` to create the schema. On Vercel, set the same variables in Project Settings and see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the smoke test. Live providers have not been exercised yet.
 
 ## Engineering principles
 
