@@ -1,0 +1,14 @@
+{
+  "name": "evidenceos",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=@evidenceos/frontend",
+    "harness": "node scripts/run-harness.mjs",
+    "lint": "npm run lint --workspace=@evidenceos/frontend",
+    "test": "npm run test --workspace=@evidenceos/frontend",
+    "typecheck": "npm run typecheck --workspace=@evidenceos/frontend"
+  }
+}
