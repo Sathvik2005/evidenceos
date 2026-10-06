@@ -1,6 +1,5 @@
-import { PGlite } from '@electric-sql/pglite'
-import { readFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
+import type { PGlite } from '@electric-sql/pglite'
+import { createMigratedDatabase } from '../helpers/migratedDb'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { ApiResult } from '../../src/api/contracts'
 import {
@@ -8,16 +7,11 @@ import {
   listEvidenceChanges, listInvestigations, recordStateChange, type Database,
 } from '../../src/api/operations'
 
-const schemaPath = fileURLToPath(
-  new URL('../../../database/migrations/001_initial_schema.sql', import.meta.url),
-)
-
 let pg: PGlite
 let db: Database
 
 beforeAll(async () => {
-  pg = new PGlite()
-  await pg.exec(await readFile(schemaPath, 'utf8'))
+  pg = await createMigratedDatabase()
   db = pg
 })
 

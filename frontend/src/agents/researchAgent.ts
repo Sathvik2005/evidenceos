@@ -42,6 +42,8 @@ export interface ResearchResult {
   readonly status: ResearchStatus
   readonly candidates: readonly EvidenceCandidate[]
   readonly unavailable: readonly { readonly target: string; readonly reason: string }[]
+  /** The sanitized documents actually retrieved: the ground truth for later provenance checks. */
+  readonly retrieved: readonly { readonly url: string; readonly text: string }[]
 }
 
 const collapse = (text: string) => text.replace(/\s+/g, ' ').trim()
@@ -141,7 +143,7 @@ export async function researchClaim(
   } catch (error) {
     if (error instanceof WorkflowError && TRANSIENT_FAILURES.has(error.kind)) {
       // Retrieval stayed unavailable after the bound: say so, do not pretend there is no evidence.
-      return { claimId: claim.id, status: 'UNAVAILABLE', candidates: [], unavailable: [{ target: 'search', reason: error.kind }] }
+      return { claimId: claim.id, status: 'UNAVAILABLE', candidates: [], unavailable: [{ target: 'search', reason: error.kind }], retrieved: [] }
     }
     throw error
   }
@@ -149,8 +151,9 @@ export async function researchClaim(
   const unavailable = [...(outcome.unavailable ?? [])]
   const documents = sanitizeDocuments(outcome.documents)
   if (documents.length === 0) {
-    return { claimId: claim.id, status: unavailable.length > 0 ? 'UNAVAILABLE' : 'NO_RESULTS', candidates: [], unavailable }
+    return { claimId: claim.id, status: unavailable.length > 0 ? 'UNAVAILABLE' : 'NO_RESULTS', candidates: [], unavailable, retrieved: [] }
   }
+  const retrieved = documents.map((d) => ({ url: d.url, text: d.text }))
 
   const picked = await runStructured(
     deps.llm,
@@ -178,5 +181,5 @@ export async function researchClaim(
       strength: pick.strength,
     })
   }
-  return { claimId: claim.id, status: unavailable.length > 0 ? 'PARTIAL' : 'COMPLETE', candidates, unavailable }
+  return { claimId: claim.id, status: unavailable.length > 0 ? 'PARTIAL' : 'COMPLETE', candidates, unavailable, retrieved }
 }

@@ -7,6 +7,8 @@ export const EVIDENCE_RELATIONSHIPS = ['SUPPORTS', 'CONTRADICTS', 'PARTIALLY_SUP
 export const EVIDENCE_STRENGTHS = ['STRONG', 'MODERATE', 'WEAK', 'UNKNOWN'] as const
 export const SOURCE_TYPES = ['WEB_PAGE', 'JOURNAL_ARTICLE', 'BOOK', 'REPORT', 'DATASET', 'OTHER'] as const
 
+export const INVESTIGATION_STATUSES = ['CREATED', 'RESEARCHING', 'ANALYZING', 'READY', 'REVIEW_REQUIRED', 'ERROR'] as const
+export type InvestigationStatus = (typeof INVESTIGATION_STATUSES)[number]
 export type ClaimState = (typeof CLAIM_STATES)[number]
 export type ConfidenceLevel = (typeof CONFIDENCE_LEVELS)[number]
 export type EvidenceRelationship = (typeof EVIDENCE_RELATIONSHIPS)[number]

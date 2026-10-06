@@ -1,5 +1,7 @@
 // Typed, serializable workflow contracts (Prompt 05). Domain enums come from the API contracts.
 import type { ClaimState, ConfidenceLevel, EvidenceRelationship, EvidenceStrength, SourceType } from '../api/contracts'
+import type { AnalystEvidence, EvidenceAssessment } from '../agents/evidenceAnalyst'
+import type { EvaluationResult } from '../agents/evaluator'
 
 export const WORKFLOW_NODES = [
   'load',
@@ -69,6 +71,8 @@ export interface WorkflowClaim {
   readonly id: string
   readonly ordinal: number
   readonly statement: string
+  /** Persisted state when the run started; null until first assessed. */
+  readonly state: ClaimState | null
 }
 
 /** A candidate is never trusted until validated; provenance fields come from a real retrieval. */
@@ -84,13 +88,7 @@ export interface EvidenceCandidate {
   readonly strength: EvidenceStrength
 }
 
-export interface Assessment {
-  readonly claimId: string
-  readonly proposedState: ClaimState
-  readonly confidence: ConfidenceLevel
-  readonly rationale: string
-  readonly evidenceIds: readonly string[]
-}
+export type Assessment = EvidenceAssessment
 
 export interface ClaimOutcome {
   readonly claimId: string
@@ -106,6 +104,11 @@ export interface WorkflowSnapshot {
   readonly claims: readonly WorkflowClaim[]
   readonly evidenceByClaim: Readonly<Record<string, readonly EvidenceCandidate[]>>
   readonly assessments: Readonly<Record<string, Assessment>>
+  /** Retrieved document text by normalized URL: ground truth for provenance checks. */
+  readonly ledger: Readonly<Record<string, string>>
+  /** Evidence that passed validation and was persisted, with real ids. */
+  readonly persistedEvidence: Readonly<Record<string, readonly (AnalystEvidence & { readonly claimId: string })[]>>
+  readonly evaluations: Readonly<Record<string, EvaluationResult>>
   readonly outcomes: Readonly<Record<string, ClaimOutcome>>
   readonly summary: string | null
   readonly trace: readonly TraceEntry[]
@@ -116,7 +119,8 @@ export interface WorkflowSnapshot {
 export type NodeUpdate = Partial<
   Pick<
     WorkflowSnapshot,
-    'claims' | 'evidenceByClaim' | 'assessments' | 'outcomes' | 'summary' | 'status' | 'question'
+    | 'claims' | 'evidenceByClaim' | 'assessments' | 'outcomes' | 'summary' | 'status' | 'question'
+    | 'ledger' | 'persistedEvidence' | 'evaluations' | 'failures'
   >
 >
 

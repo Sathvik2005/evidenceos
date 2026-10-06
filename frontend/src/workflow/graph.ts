@@ -19,6 +19,9 @@ export const InvestigationState = Annotation.Root({
   evidenceByClaim: Annotation<WorkflowSnapshot['evidenceByClaim']>({ reducer: merge, default: () => ({}) }),
   assessments: Annotation<WorkflowSnapshot['assessments']>({ reducer: merge, default: () => ({}) }),
   outcomes: Annotation<WorkflowSnapshot['outcomes']>({ reducer: merge, default: () => ({}) }),
+  ledger: Annotation<WorkflowSnapshot['ledger']>({ reducer: merge, default: () => ({}) }),
+  persistedEvidence: Annotation<WorkflowSnapshot['persistedEvidence']>({ reducer: merge, default: () => ({}) }),
+  evaluations: Annotation<WorkflowSnapshot['evaluations']>({ reducer: merge, default: () => ({}) }),
   summary: Annotation<string | null>({ reducer: replace, default: () => null }),
   trace: Annotation<readonly TraceEntry[]>({ reducer: append, default: () => [] }),
   failures: Annotation<readonly WorkflowFailure[]>({ reducer: append, default: () => [] }),
@@ -110,7 +113,7 @@ export async function runInvestigation(
 ): Promise<WorkflowSnapshot> {
   const result = (await graph.invoke(input, { configurable: { thread_id: threadId } })) as WorkflowSnapshot
   if (result.status === 'FAILED') return result
-  // COMPLETED only when every node actually ran; otherwise the run is explicitly PARTIAL.
+  // COMPLETED only when every node ran and nothing failed; otherwise the run is explicitly PARTIAL.
   const ranAll = WORKFLOW_NODES.every((node) => result.trace.some((t) => t.node === node && t.outcome === 'OK'))
-  return { ...result, status: ranAll ? 'COMPLETED' : 'PARTIAL' }
+  return { ...result, status: ranAll && result.failures.length === 0 ? 'COMPLETED' : 'PARTIAL' }
 }

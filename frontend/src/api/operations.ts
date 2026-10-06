@@ -2,7 +2,7 @@
 // callers are trusted to supply the authenticated `ownerId`.
 import {
   checkEnum, checkHttpUrl, checkOptionalText, checkPage, checkText, checkUuid, fail, ok,
-  CLAIM_STATES, EVIDENCE_RELATIONSHIPS, EVIDENCE_STRENGTHS, SOURCE_TYPES,
+  CLAIM_STATES, CONFIDENCE_LEVELS, EVIDENCE_RELATIONSHIPS, EVIDENCE_STRENGTHS, INVESTIGATION_STATUSES, SOURCE_TYPES,
   type AddClaimInput, type AddEvidenceInput, type AddSourceInput, type ApiResult, type Claim,
   type CreateInvestigationInput, type Evidence, type EvidenceChange, type Investigation, type Page,
   type RecordStateChangeInput, type Source,
@@ -297,3 +297,39 @@ export const listEvidence = (db: Database, ownerId: string, investigationId: str
   listOwned(db, ownerId, investigationId, page, 'evidence', 'created_at, id', toEvidence)
 export const listEvidenceChanges = (db: Database, ownerId: string, investigationId: string, page: Page = {}) =>
   listOwned(db, ownerId, investigationId, page, 'evidence_changes', 'changed_at, id', toChange)
+
+export async function setInvestigationStatus(
+  db: Database, ownerId: string, investigationId: string, status: string,
+): Promise<ApiResult<Investigation>> {
+  const id = checkUuid(investigationId, 'investigationId')
+  const next = checkEnum(status, INVESTIGATION_STATUSES, 'status')
+  const bad = firstError(id, next)
+  if (bad || !id.ok || !next.ok) return bad ?? UNREACHABLE
+  const owned = await assertOwned(db, ownerId, id.data)
+  if (!owned.ok) return owned
+  try {
+    const { rows } = await db.query<Row>('UPDATE investigations SET status = $2 WHERE id = $1 RETURNING *', [id.data, next.data])
+    return rows[0] ? ok(toInvestigation(rows[0])) : fail('NOT_FOUND', 'Investigation not found.')
+  } catch (error) { return mapDatabaseError(error) }
+}
+
+/** Stores the assessed confidence and reason on a claim. The claim state itself changes only via recordStateChange. */
+export async function recordClaimAssessment(
+  db: Database, ownerId: string,
+  input: { investigationId: string; claimId: string; confidence: string; reason: string },
+): Promise<ApiResult<Claim>> {
+  const investigationId = checkUuid(input.investigationId, 'investigationId')
+  const claimId = checkUuid(input.claimId, 'claimId')
+  const confidence = checkEnum(input.confidence, CONFIDENCE_LEVELS, 'confidence')
+  const reason = checkText(input.reason, 'reason', 4000)
+  const bad = firstError(investigationId, claimId, confidence, reason)
+  if (bad || !investigationId.ok || !claimId.ok || !confidence.ok || !reason.ok) return bad ?? UNREACHABLE
+  const owned = await assertOwned(db, ownerId, investigationId.data)
+  if (!owned.ok) return owned
+  try {
+    const { rows } = await db.query<Row>(
+      'UPDATE claims SET confidence = $3, assessment_reason = $4 WHERE investigation_id = $1 AND id = $2 RETURNING *',
+      [investigationId.data, claimId.data, confidence.data, reason.data])
+    return rows[0] ? ok(toClaim(rows[0])) : fail('NOT_FOUND', 'Claim not found.')
+  } catch (error) { return mapDatabaseError(error) }
+}
