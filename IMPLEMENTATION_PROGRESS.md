@@ -6,8 +6,8 @@ prompt is worked; no unstarted prompt is represented as completed.
 | Prompt | Status | Work and verification |
 | --- | --- | --- |
 | 01 — Repository & Environment Foundation | Conditional | Added the React/Vite TypeScript workspace, strict typechecking, lint/test/build scripts, test-directory structure, README, ignored local environment configuration, and a harness entry point. Lint, typecheck, unit tests, and production build pass. The authoritative specification files referenced by Prompt 01 are not present in the supplied package. |
-| 02 — Momen Project Foundation | In progress | Added public GraphQL/subscription endpoint configuration with HTTPS/WSS validation and a blank server-only token setting. Local tests pass. No Momen project/export is available in this workspace; live synchronization and logs are unverified. |
-| 03 — Database & Data Model | Not started | — |
+| 02 — Momen Project Foundation | Conditional | Added public GraphQL/subscription endpoint configuration with HTTPS/WSS validation, an anonymous-only GraphQL probe, and a blank server-only token setting. The anonymous GraphQL probe succeeds. No Momen project/export is available in this workspace; backend synchronization and console logs remain unverified. |
+| 03 — Database & Data Model | Provisional | Added PostgreSQL schema, enum/check/FK/index constraints, and state-history triggers based on the supplied constitution. PGlite CRUD, relationship, invalid-reference, transition, and append-only history tests pass. `DATA_MODEL.md` is missing and remote Momen synchronization is unverified; assumptions are recorded in `database/PROVISIONAL_DATA_MODEL.md`. |
 | 04 — API & Backend Actions | Not started | — |
 | 05 — LangGraph Workflow Foundation | Not started | — |
 | 06 — Claim Decomposer Agent | Not started | — |

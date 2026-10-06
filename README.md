@@ -30,7 +30,11 @@ parallel application database or a browser-accessible admin-token proxy.
 `npm run momen:check` performs an anonymous-only endpoint probe and never reads or
 sends the admin token.
 
+The database migration and assumptions are documented in
+[`database/PROVISIONAL_DATA_MODEL.md`](./database/PROVISIONAL_DATA_MODEL.md).
+It is locally tested against PGlite but has not been synchronized to Momen.
+
 The harness command is an entry point only; the harness is introduced by Prompt 12.
 
-See [`docs/momen-setup.md`](./docs/momen-setup.md) for Momen setup and the frontend/backend
-boundary.
+See [`docs/momen-setup.md`](./docs/momen-setup.md) for Momen setup, the frontend/backend
+boundary, and `npm run momen:check`.
