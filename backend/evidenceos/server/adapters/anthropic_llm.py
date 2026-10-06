@@ -66,7 +66,7 @@ class AnthropicLlm:
                 system=request.system,
                 messages=[{"role": "user", "content": request.user}],
             )
-            text = "".join(block.text for block in response.content if getattr(block, "type", "") == "text")
+            text = "".join(block.text for block in response.content if isinstance(block, anthropic.types.TextBlock))
         except Exception as error:
             # The provider message can echo request details, so only the classified kind is surfaced.
             raise WorkflowError(classify_provider_error(error), "The language model request failed.") from error

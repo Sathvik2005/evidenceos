@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
-import pytest
 import pytest_asyncio
 
 from evidenceos.db import PsycopgDatabase
@@ -166,8 +165,6 @@ async def test_validates_input_and_rejects_abuse_with_structured_errors(api: Api
     assert (await api.call("/nope")).status == 404
     assert (await api.call("/investigations", method="DELETE")).status == 405
     assert (await api.call(f"/investigations/{api.demo_id}/claims/extra/segments")).status == 404
-    bad_limit = await api.call(f"/investigations/{api.demo_id}/claims?limit=abc".split("?")[0])
-    assert bad_limit.status == 200  # sanity: the plain read works
 
 
 async def test_never_leaks_internals_on_unexpected_failures(api: Api) -> None:

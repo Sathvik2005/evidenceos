@@ -52,7 +52,8 @@ class ApiResult(Generic[T]):
     """Either `data` (ok) or `error`. Every operation returns one of these; none raises for expected failures."""
 
     ok: bool
-    data: T | None = None
+    #: Typed Any on purpose: callers branch on `ok` first, and an Optional here would force a check on every read.
+    data: Any = None
     error: ApiError | None = None
 
 

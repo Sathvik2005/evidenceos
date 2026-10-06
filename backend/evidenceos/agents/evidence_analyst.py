@@ -103,7 +103,7 @@ def validate_assessment(raw: Any, claim_id: str, evidence: list[AnalystEvidence]
     return valid(
         EvidenceAssessment(
             claim_id=claim_id,
-            proposed_state=state,  # type: ignore[arg-type]
+            proposed_state=state,
             confidence=raw["confidence"],
             rationale=rationale,
             evidence_ids=tuple(cited),

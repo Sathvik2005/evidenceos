@@ -10,7 +10,12 @@ import pytest
 
 from evidenceos.agents.claim_decomposer import MAX_CLAIMS, claim_problems, decompose_claims, validate_decomposition
 from evidenceos.agents.evaluator import evaluate_assessment, validate_audit
-from evidenceos.agents.evidence_analyst import AnalystEvidence, EvidenceAssessment, analyze_evidence, validate_assessment
+from evidenceos.agents.evidence_analyst import (
+    AnalystEvidence,
+    EvidenceAssessment,
+    analyze_evidence,
+    validate_assessment,
+)
 from evidenceos.agents.research_agent import (
     RetrievedDocument,
     SearchOutcome,

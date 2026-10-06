@@ -18,7 +18,12 @@ import pytest_asyncio
 
 from evidenceos.agents.claim_decomposer import decompose_claims
 from evidenceos.agents.evaluator import evaluate_assessment
-from evidenceos.agents.evidence_analyst import AnalystEvidence, EvidenceAssessment, analyze_evidence, validate_assessment
+from evidenceos.agents.evidence_analyst import (
+    AnalystEvidence,
+    EvidenceAssessment,
+    analyze_evidence,
+    validate_assessment,
+)
 from evidenceos.agents.research_agent import SearchOutcome, research_claim
 from evidenceos.db import PsycopgDatabase
 from evidenceos.operations import create_investigation

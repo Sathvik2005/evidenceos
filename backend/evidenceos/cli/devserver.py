@@ -32,11 +32,11 @@ PORT = int(os.environ.get("PORT", "8787"))
 
 
 def build_dev_app() -> FastAPI:
-    import pgserver  # development dependency; imported lazily so production never needs it
+    import pgserver  # type: ignore[import-untyped,unused-ignore]  # dev-only dependency; production never needs it
 
     data = ROOT / ".data" / "postgres"
     data.mkdir(parents=True, exist_ok=True)
-    server = pgserver.get_server(str(data), cleanup_mode="stop")
+    server = pgserver.get_server(str(data), cleanup_mode="stop")  # type: ignore[attr-defined]
     url = server.get_uri()
     apply_migrations(url)
     corpus = load_corpus(ROOT / "demo" / "corpus.json")

@@ -169,7 +169,7 @@ async def seed_initial(db: Database, owner: str, corpus: list[RecordedDocument])
             "assessment",
         )
     _unwrap(await set_investigation_status(db, owner, created["id"], "READY"), "status")
-    return created["id"]
+    return str(created["id"])
 
 
 async def seed_advance(db: Database, owner: str, investigation_id: str, corpus: list[RecordedDocument]) -> None:

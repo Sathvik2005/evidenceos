@@ -73,7 +73,8 @@ def fnv1a(text: str) -> str:
 
 def unwrap(result: ApiResult[T]) -> T:
     if result.ok:
-        return result.data  # type: ignore[return-value]
+        data: T = result.data
+        return data
     assert result.error is not None
     code = result.error.code
     if code in ("VALIDATION_FAILED", "REFERENCE_INVALID", "CONSTRAINT_VIOLATION"):

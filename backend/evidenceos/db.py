@@ -10,7 +10,7 @@ import asyncio
 import re
 import sys
 from collections.abc import Sequence
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 import psycopg
 from psycopg.rows import dict_row
@@ -50,7 +50,9 @@ class PsycopgDatabase:
         text, values = translate(sql, params)
         async with self._pool.connection() as conn:
             cur = await conn.execute(text, values)
-            return await cur.fetchall() if cur.description else []
+            if not cur.description:
+                return []
+            return cast("list[dict[str, Any]]", await cur.fetchall())  # the pool uses the dict_row factory
 
     async def close(self) -> None:
         await self._pool.close()
@@ -66,4 +68,4 @@ def sqlstate(error: BaseException) -> str | None:
 def use_selector_event_loop_on_windows() -> None:
     """psycopg's async mode cannot run on Windows' default ProactorEventLoop; call once before the loop starts."""
     if sys.platform == "win32":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  # type: ignore[attr-defined]
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
