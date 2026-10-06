@@ -27,5 +27,10 @@ The frontend currently validates Momen endpoint configuration but does not send
 authenticated GraphQL operations; those contracts belong to later implementation
 prompts. Momen remains the backend of record; this repository does not add a
 parallel application database or a browser-accessible admin-token proxy.
+`npm run momen:check` performs an anonymous-only endpoint probe and never reads or
+sends the admin token.
 
 The harness command is an entry point only; the harness is introduced by Prompt 12.
+
+See [`docs/momen-setup.md`](./docs/momen-setup.md) for Momen setup and the frontend/backend
+boundary.

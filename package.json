@@ -9,6 +9,7 @@
     "harness": "node scripts/run-harness.mjs",
     "lint": "npm run lint --workspace=@evidenceos/frontend",
     "test": "npm run test --workspace=@evidenceos/frontend",
-    "typecheck": "npm run typecheck --workspace=@evidenceos/frontend"
+    "typecheck": "npm run typecheck --workspace=@evidenceos/frontend",
+    "momen:check": "node --env-file=.env.local scripts/check-momen.mjs"
   }
 }
