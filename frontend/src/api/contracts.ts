@@ -4,7 +4,7 @@
 export const CLAIM_STATES = ['SUPPORTED', 'PARTIALLY_SUPPORTED', 'CONFLICTING', 'INSUFFICIENT'] as const
 export const CONFIDENCE_LEVELS = ['HIGH', 'MEDIUM', 'LOW'] as const
 export const EVIDENCE_RELATIONSHIPS = ['SUPPORTS', 'CONTRADICTS', 'PARTIALLY_SUPPORTS', 'INSUFFICIENT'] as const
-export const EVIDENCE_STRENGTHS = ['STRONG', 'MODERATE', 'WEAK', 'UNKNOWN'] as const
+export const EVIDENCE_STRENGTHS = ['STRONG', 'MODERATE', 'WEAK'] as const
 export const SOURCE_TYPES = ['WEB_PAGE', 'JOURNAL_ARTICLE', 'BOOK', 'REPORT', 'DATASET', 'OTHER'] as const
 
 export const INVESTIGATION_STATUSES = ['CREATED', 'RESEARCHING', 'ANALYZING', 'READY', 'REVIEW_REQUIRED', 'ERROR'] as const
@@ -68,12 +68,14 @@ export interface AddEvidenceInput {
   readonly relationship: EvidenceRelationship
   readonly strength: EvidenceStrength
   readonly excerpt: string
+  readonly reasoning?: string
   readonly idempotencyKey?: string
 }
 export interface RecordStateChangeInput {
   readonly investigationId: string
   readonly claimId: string
-  readonly previousState: ClaimState | null
+  /** Required: a change event only exists when a persisted previous state does. */
+  readonly previousState: ClaimState
   readonly newState: ClaimState
   readonly reason: string
   readonly triggeringEvidenceId: string
@@ -94,6 +96,7 @@ export interface Claim {
   readonly statement: string
   readonly state: ClaimState | null
   readonly confidence: ConfidenceLevel | null
+  readonly assessmentReason: string | null
 }
 export interface Source {
   readonly id: string
@@ -112,12 +115,13 @@ export interface Evidence {
   readonly relationship: EvidenceRelationship
   readonly strength: EvidenceStrength
   readonly excerpt: string
+  readonly reasoning: string | null
 }
 export interface EvidenceChange {
   readonly id: string
   readonly investigationId: string
   readonly claimId: string
-  readonly previousState: ClaimState | null
+  readonly previousState: ClaimState
   readonly newState: ClaimState
   readonly reason: string
   readonly triggeringEvidenceId: string

@@ -24,6 +24,7 @@ const toInvestigation = (r: Row): Investigation => ({
 const toClaim = (r: Row): Claim => ({
   id: r.id as string, investigationId: r.investigation_id as string, ordinal: r.ordinal as number,
   statement: r.statement as string, state: r.state as Claim['state'], confidence: r.confidence as Claim['confidence'],
+  assessmentReason: (r.assessment_reason as string | null) ?? null,
 })
 const toSource = (r: Row): Source => ({
   id: r.id as string, investigationId: r.investigation_id as string, sourceType: r.source_type as Source['sourceType'],
@@ -34,6 +35,7 @@ const toEvidence = (r: Row): Evidence => ({
   id: r.id as string, investigationId: r.investigation_id as string, claimId: r.claim_id as string,
   sourceId: r.source_id as string, relationship: r.relationship as Evidence['relationship'],
   strength: r.strength as Evidence['strength'], excerpt: r.excerpt as string,
+  reasoning: (r.reasoning as string | null) ?? null,
 })
 const toChange = (r: Row): EvidenceChange => ({
   id: r.id as string, investigationId: r.investigation_id as string, claimId: r.claim_id as string,
@@ -212,9 +214,10 @@ export async function addEvidence(db: Database, ownerId: string, input: AddEvide
   const relationship = checkEnum(input.relationship, EVIDENCE_RELATIONSHIPS, 'relationship')
   const strength = checkEnum(input.strength, EVIDENCE_STRENGTHS, 'strength')
   const excerpt = checkText(input.excerpt, 'excerpt', 8000)
+  const reasoning = checkOptionalText(input.reasoning, 'reasoning', 2000)
   const key = optionalKey(input.idempotencyKey)
-  const bad = firstError(investigationId, claimId, sourceId, relationship, strength, excerpt, key)
-  if (bad || !investigationId.ok || !claimId.ok || !sourceId.ok || !relationship.ok || !strength.ok || !excerpt.ok || !key.ok) {
+  const bad = firstError(investigationId, claimId, sourceId, relationship, strength, excerpt, reasoning, key)
+  if (bad || !investigationId.ok || !claimId.ok || !sourceId.ok || !relationship.ok || !strength.ok || !excerpt.ok || !reasoning.ok || !key.ok) {
     return bad ?? UNREACHABLE
   }
   const owned = await assertOwned(db, ownerId, investigationId.data)
@@ -229,9 +232,9 @@ export async function addEvidence(db: Database, ownerId: string, input: AddEvide
       e.strength === strength.data && e.excerpt === excerpt.data,
     insert: async () => {
       const { rows } = await db.query<Row>(
-        `INSERT INTO evidence (investigation_id, claim_id, source_id, relationship, strength, excerpt, idempotency_key)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [investigationId.data, claimId.data, sourceId.data, relationship.data, strength.data, excerpt.data, key.data ?? null])
+        `INSERT INTO evidence (investigation_id, claim_id, source_id, relationship, strength, excerpt, reasoning, idempotency_key)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [investigationId.data, claimId.data, sourceId.data, relationship.data, strength.data, excerpt.data, reasoning.data ?? null, key.data ?? null])
       return toEvidence(rows[0] as Row)
     },
   })
@@ -243,7 +246,7 @@ export async function recordStateChange(db: Database, ownerId: string, input: Re
   const claimId = checkUuid(input.claimId, 'claimId')
   const evidenceId = checkUuid(input.triggeringEvidenceId, 'triggeringEvidenceId')
   const newState = checkEnum(input.newState, CLAIM_STATES, 'newState')
-  const previousState = input.previousState === null ? ok(null) : checkEnum(input.previousState, CLAIM_STATES, 'previousState')
+  const previousState = checkEnum(input.previousState, CLAIM_STATES, 'previousState')
   const reason = checkText(input.reason, 'reason', 4000)
   const key = checkText(input.idempotencyKey, 'idempotencyKey', 200)
   const bad = firstError(investigationId, claimId, evidenceId, newState, previousState, reason, key) ??
@@ -313,23 +316,25 @@ export async function setInvestigationStatus(
   } catch (error) { return mapDatabaseError(error) }
 }
 
-/** Stores the assessed confidence and reason on a claim. The claim state itself changes only via recordStateChange. */
+/** Stores the assessed confidence and reason, and the claim's FIRST state. Later state changes go through recordStateChange. */
 export async function recordClaimAssessment(
   db: Database, ownerId: string,
-  input: { investigationId: string; claimId: string; confidence: string; reason: string },
+  input: { investigationId: string; claimId: string; confidence: string; reason: string; initialState?: string },
 ): Promise<ApiResult<Claim>> {
   const investigationId = checkUuid(input.investigationId, 'investigationId')
   const claimId = checkUuid(input.claimId, 'claimId')
   const confidence = checkEnum(input.confidence, CONFIDENCE_LEVELS, 'confidence')
   const reason = checkText(input.reason, 'reason', 4000)
-  const bad = firstError(investigationId, claimId, confidence, reason)
-  if (bad || !investigationId.ok || !claimId.ok || !confidence.ok || !reason.ok) return bad ?? UNREACHABLE
+  const initialState = input.initialState === undefined ? ok(undefined) : checkEnum(input.initialState, CLAIM_STATES, 'initialState')
+  const bad = firstError(investigationId, claimId, confidence, reason, initialState)
+  if (bad || !investigationId.ok || !claimId.ok || !confidence.ok || !reason.ok || !initialState.ok) return bad ?? UNREACHABLE
   const owned = await assertOwned(db, ownerId, investigationId.data)
   if (!owned.ok) return owned
   try {
     const { rows } = await db.query<Row>(
-      'UPDATE claims SET confidence = $3, assessment_reason = $4 WHERE investigation_id = $1 AND id = $2 RETURNING *',
-      [investigationId.data, claimId.data, confidence.data, reason.data])
+      // The first state may be set here; once set, only evidence_changes can alter it (DB-enforced).
+      'UPDATE claims SET confidence = $3, assessment_reason = $4, state = COALESCE(state, $5::claim_state) WHERE investigation_id = $1 AND id = $2 RETURNING *',
+      [investigationId.data, claimId.data, confidence.data, reason.data, initialState.data ?? null])
     return rows[0] ? ok(toClaim(rows[0])) : fail('NOT_FOUND', 'Claim not found.')
   } catch (error) { return mapDatabaseError(error) }
 }

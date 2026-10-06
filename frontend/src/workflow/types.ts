@@ -86,6 +86,7 @@ export interface EvidenceCandidate {
   readonly excerpt: string
   readonly relationship: EvidenceRelationship
   readonly strength: EvidenceStrength
+  readonly reasoning: string | null
 }
 
 export type Assessment = EvidenceAssessment
@@ -109,6 +110,8 @@ export interface WorkflowSnapshot {
   /** Evidence that passed validation and was persisted, with real ids. */
   readonly persistedEvidence: Readonly<Record<string, readonly (AnalystEvidence & { readonly claimId: string })[]>>
   readonly evaluations: Readonly<Record<string, EvaluationResult>>
+  /** Evidence that already existed when the run started; anything else is NEW evidence. */
+  readonly priorEvidenceIds: readonly string[]
   readonly outcomes: Readonly<Record<string, ClaimOutcome>>
   readonly summary: string | null
   readonly trace: readonly TraceEntry[]
@@ -120,7 +123,7 @@ export type NodeUpdate = Partial<
   Pick<
     WorkflowSnapshot,
     | 'claims' | 'evidenceByClaim' | 'assessments' | 'outcomes' | 'summary' | 'status' | 'question'
-    | 'ledger' | 'persistedEvidence' | 'evaluations' | 'failures'
+    | 'ledger' | 'persistedEvidence' | 'evaluations' | 'failures' | 'priorEvidenceIds'
   >
 >
 

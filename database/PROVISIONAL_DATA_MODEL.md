@@ -17,12 +17,12 @@ Replace or amend it after the authoritative data model is available.
 
 ## Provisional enum assumptions
 
-- Investigation status: `DRAFT`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED`.
+- Investigation status: `CREATED`, `RESEARCHING`, `ANALYZING`, `READY`, `REVIEW_REQUIRED`, `ERROR` (system design section 7).
 - Claim state: `SUPPORTED`, `PARTIALLY_SUPPORTED`, `CONFLICTING`, `INSUFFICIENT`.
 - Confidence: `HIGH`, `MEDIUM`, `LOW`, stored separately from claim state.
 - Evidence relationship: `SUPPORTS`, `CONTRADICTS`, `PARTIALLY_SUPPORTS`,
   `INSUFFICIENT`.
-- Evidence strength: `STRONG`, `MODERATE`, `WEAK`, `UNKNOWN`.
+- Evidence strength: `STRONG`, `MODERATE`, `WEAK` (system design section 7). Evidence also has an optional `reasoning` text.
 - Source type: `WEB_PAGE`, `JOURNAL_ARTICLE`, `BOOK`, `REPORT`, `DATASET`,
   `OTHER`.
 
@@ -34,10 +34,12 @@ data-model specification.
 ## Integrity and history
 
 - Claim state may be unset until an assessment exists.
-- State changes record the previous and new state, reason, triggering evidence,
-  and a required idempotency key.
-- A database trigger rejects a transition unless the stored state matches the
-  recorded previous state, then updates the claim state in the same transaction.
+- A claim's FIRST state is stored directly; it is not a change event. A change record
+  (`evidence_changes`) requires a persisted previous state (NOT NULL), a different new
+  state, a reason, triggering evidence belonging to the claim, and an idempotency key.
+- A trigger rejects a change unless the stored state matches the recorded previous state,
+  then updates the claim state in the same transaction. A second trigger blocks any other
+  direct edit of an established claim state.
 - Evidence-change records reject updates and deletes.
 - Sources retain URL, title, optional publisher/publication time, and retrieval
   time; excerpts are required on evidence records.

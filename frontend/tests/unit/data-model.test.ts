@@ -130,13 +130,14 @@ describe('provisional PostgreSQL data model', () => {
 
   it('records a state change only when prior state and triggering evidence match', async () => {
     const fixture = await insertFixture('State transition question?')
+    await database.query("UPDATE claims SET state = 'PARTIALLY_SUPPORTED' WHERE id = $1", [fixture.claimId])
 
     await database.query(
       `INSERT INTO evidence_changes (
          investigation_id, claim_id, previous_state, new_state, reason,
          triggering_evidence_id, idempotency_key
        )
-       VALUES ($1, $2, NULL, 'SUPPORTED', 'Supported by validated evidence.',
+       VALUES ($1, $2, 'PARTIALLY_SUPPORTED', 'CONFLICTING', 'New evidence contradicts the claim.',
                $3, 'transition-1')`,
       [fixture.investigationId, fixture.claimId, fixture.evidenceId],
     )
@@ -145,7 +146,7 @@ describe('provisional PostgreSQL data model', () => {
       'SELECT state FROM claims WHERE id = $1',
       [fixture.claimId],
     )
-    expect(state.rows[0]?.state).toBe('SUPPORTED')
+    expect(state.rows[0]?.state).toBe('CONFLICTING')
 
     await expect(
       database.query(
@@ -153,7 +154,7 @@ describe('provisional PostgreSQL data model', () => {
            investigation_id, claim_id, previous_state, new_state, reason,
            triggering_evidence_id, idempotency_key
          )
-         VALUES ($1, $2, 'INSUFFICIENT', 'CONFLICTING', 'Mismatched prior state.',
+         VALUES ($1, $2, 'INSUFFICIENT', 'SUPPORTED', 'Mismatched prior state.',
                  $3, 'transition-2')`,
         [fixture.investigationId, fixture.claimId, fixture.evidenceId],
       ),
@@ -173,27 +174,56 @@ describe('provisional PostgreSQL data model', () => {
       throw new Error('Test fixture second claim was not created.')
     }
 
+    await database.query("UPDATE claims SET state = 'PARTIALLY_SUPPORTED' WHERE id = $1", [otherClaimId])
+
     await expect(
       database.query(
         `INSERT INTO evidence_changes (
            investigation_id, claim_id, previous_state, new_state, reason,
            triggering_evidence_id, idempotency_key
          )
-         VALUES ($1, $2, NULL, 'SUPPORTED', 'Evidence belongs elsewhere.',
+         VALUES ($1, $2, 'PARTIALLY_SUPPORTED', 'CONFLICTING', 'Evidence belongs elsewhere.',
                  $3, 'transition-3')`,
         [fixture.investigationId, otherClaimId, fixture.evidenceId],
       ),
     ).rejects.toThrow()
   })
 
+  it('allows a first state to be set directly but blocks later direct state edits', async () => {
+    const fixture = await insertFixture('Direct edit question?')
+    await database.query("UPDATE claims SET state = 'SUPPORTED' WHERE id = $1", [fixture.claimId])
+    await database.query('SAVEPOINT direct_edit')
+    await expect(
+      database.query("UPDATE claims SET state = 'CONFLICTING' WHERE id = $1", [fixture.claimId]),
+    ).rejects.toThrow('Claim state may only change through an evidence_changes record.')
+    await database.query('ROLLBACK TO SAVEPOINT direct_edit')
+  })
+
+  it('requires a persisted previous state on every change record', async () => {
+    const fixture = await insertFixture('Null previous state question?')
+    await database.query('SAVEPOINT null_previous')
+    await expect(
+      database.query(
+        `INSERT INTO evidence_changes (
+           investigation_id, claim_id, previous_state, new_state, reason,
+           triggering_evidence_id, idempotency_key
+         )
+         VALUES ($1, $2, NULL, 'SUPPORTED', 'A first assessment is not a change.', $3, 'null-prev')`,
+        [fixture.investigationId, fixture.claimId, fixture.evidenceId],
+      ),
+    ).rejects.toThrow()
+    await database.query('ROLLBACK TO SAVEPOINT null_previous')
+  })
+
   it('keeps evidence-change history append-only', async () => {
     const fixture = await insertFixture('Append-only history question?')
+    await database.query("UPDATE claims SET state = 'PARTIALLY_SUPPORTED' WHERE id = $1", [fixture.claimId])
     const history = await database.query<{ id: string }>(
       `INSERT INTO evidence_changes (
          investigation_id, claim_id, previous_state, new_state, reason,
          triggering_evidence_id, idempotency_key
        )
-       VALUES ($1, $2, NULL, 'SUPPORTED', 'Initial supported state.',
+       VALUES ($1, $2, 'PARTIALLY_SUPPORTED', 'CONFLICTING', 'New contradicting evidence.',
                $3, 'transition-4')
        RETURNING id`,
       [fixture.investigationId, fixture.claimId, fixture.evidenceId],

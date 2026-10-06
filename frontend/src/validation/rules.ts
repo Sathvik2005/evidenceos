@@ -26,7 +26,9 @@ export const RULES = {
   CITED_EVIDENCE_FOREIGN_CLAIM: 'CITED_EVIDENCE_FOREIGN_CLAIM',
   CONFIDENCE_UNSUPPORTED: 'CONFIDENCE_UNSUPPORTED',
   CAUSATION_UNSUPPORTED: 'CAUSATION_UNSUPPORTED',
+  CHANGE_PREVIOUS_MISSING: 'CHANGE_PREVIOUS_MISSING',
   CHANGE_NO_PREVIOUS_MATCH: 'CHANGE_NO_PREVIOUS_MATCH',
+  CHANGE_TRIGGER_NOT_NEW: 'CHANGE_TRIGGER_NOT_NEW',
   CHANGE_NO_DIFFERENCE: 'CHANGE_NO_DIFFERENCE',
   CHANGE_TRIGGER_MISSING: 'CHANGE_TRIGGER_MISSING',
   CHANGE_TRIGGER_FOREIGN_CLAIM: 'CHANGE_TRIGGER_FOREIGN_CLAIM',
@@ -194,15 +196,21 @@ export function validateAssessmentRules(
 export interface StateChangeCheck {
   readonly claimId: string
   readonly persistedState: ClaimState | null
+  /** Null means the claim has no persisted state yet, so no change event may exist. */
   readonly previousState: ClaimState | null
   readonly newState: ClaimState
   readonly triggeringEvidence: { readonly id: string; readonly claimId: string } | null
+  /** True when the trigger was not part of the evidence known before this run. */
+  readonly triggerIsNew?: boolean
 }
 
 /** A change event needs a real previous state, a real difference and a real trigger for this claim. */
 export function validateStateChange(change: StateChangeCheck): RuleResult {
   const v: Violation[] = []
   if (!CLAIM_STATES.includes(change.newState)) v.push({ rule: RULES.STATE_INVALID, message: 'New state is invalid.' })
+  if (change.previousState === null) {
+    v.push({ rule: RULES.CHANGE_PREVIOUS_MISSING, message: 'A change needs a persisted previous state; a first assessment is not a change.' })
+  }
   if (change.previousState !== change.persistedState) {
     v.push({ rule: RULES.CHANGE_NO_PREVIOUS_MATCH, message: 'Previous state does not match the persisted state.' })
   }
@@ -213,6 +221,8 @@ export function validateStateChange(change: StateChangeCheck): RuleResult {
     v.push({ rule: RULES.CHANGE_TRIGGER_MISSING, message: 'A state change needs triggering evidence.' })
   } else if (change.triggeringEvidence.claimId !== change.claimId) {
     v.push({ rule: RULES.CHANGE_TRIGGER_FOREIGN_CLAIM, message: 'Triggering evidence belongs to another claim.', subject: change.triggeringEvidence.id })
+  } else if (change.triggerIsNew === false) {
+    v.push({ rule: RULES.CHANGE_TRIGGER_NOT_NEW, message: 'A state change must be triggered by evidence new to this run.', subject: change.triggeringEvidence.id })
   }
   return result(v)
 }

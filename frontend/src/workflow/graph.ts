@@ -22,6 +22,7 @@ export const InvestigationState = Annotation.Root({
   ledger: Annotation<WorkflowSnapshot['ledger']>({ reducer: merge, default: () => ({}) }),
   persistedEvidence: Annotation<WorkflowSnapshot['persistedEvidence']>({ reducer: merge, default: () => ({}) }),
   evaluations: Annotation<WorkflowSnapshot['evaluations']>({ reducer: merge, default: () => ({}) }),
+  priorEvidenceIds: Annotation<WorkflowSnapshot['priorEvidenceIds']>({ reducer: replace, default: () => [] }),
   summary: Annotation<string | null>({ reducer: replace, default: () => null }),
   trace: Annotation<readonly TraceEntry[]>({ reducer: append, default: () => [] }),
   failures: Annotation<readonly WorkflowFailure[]>({ reducer: append, default: () => [] }),

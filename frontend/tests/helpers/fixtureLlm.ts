@@ -18,7 +18,7 @@ function researchAnswer(request: LlmRequest) {
   const candidates = [...request.user.matchAll(/<document index="(\d+)">\n([\s\S]*?)\n<\/document>/g)].map((match) => ({
     documentIndex: Number(match[1]),
     excerpt: match[2] ?? '',
-    relationship: /declined|fell/.test(match[2] ?? '') ? 'CONTRADICTS' : 'SUPPORTS',
+    relationship: /declined|fell/.test(match[2] ?? '') ? 'CONTRADICTS' : /partly/.test(match[2] ?? '') ? 'PARTIALLY_SUPPORTS' : 'SUPPORTS',
     strength: 'MODERATE',
   }))
   return { candidates }
@@ -27,9 +27,12 @@ function researchAnswer(request: LlmRequest) {
 function assessmentAnswer(request: LlmRequest) {
   const items = [...request.user.matchAll(/<evidence id="([^"]+)" relationship="([^"]+)"/g)].map((m) => ({ id: m[1] ?? '', relationship: m[2] ?? '' }))
   const supports = items.some((i) => i.relationship === 'SUPPORTS')
+  const partial = items.some((i) => i.relationship === 'PARTIALLY_SUPPORTS')
   const contradicts = items.some((i) => i.relationship === 'CONTRADICTS')
+  const proposedState =
+    contradicts && (supports || partial) ? 'CONFLICTING' : supports && !contradicts ? 'SUPPORTED' : partial ? 'PARTIALLY_SUPPORTED' : 'INSUFFICIENT'
   return {
-    proposedState: supports && contradicts ? 'CONFLICTING' : supports ? 'SUPPORTED' : 'INSUFFICIENT',
+    proposedState,
     confidence: 'MEDIUM',
     rationale: 'Assessment derived from the supplied evidence.',
     evidenceIds: items.map((i) => i.id),

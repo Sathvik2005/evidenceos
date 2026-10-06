@@ -46,6 +46,7 @@ describe('Research Agent: provenance and fabrication guards', () => {
         excerpt: 'Students in remote classes scored 4 points lower on average.',
         relationship: 'CONTRADICTS',
         strength: 'MODERATE',
+        reasoning: null,
       },
     ])
   })

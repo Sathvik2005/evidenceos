@@ -1,11 +1,12 @@
 BEGIN;
 
 CREATE TYPE investigation_status AS ENUM (
-  'DRAFT',
-  'RUNNING',
-  'COMPLETED',
-  'FAILED',
-  'CANCELLED'
+  'CREATED',
+  'RESEARCHING',
+  'ANALYZING',
+  'READY',
+  'REVIEW_REQUIRED',
+  'ERROR'
 );
 
 CREATE TYPE claim_state AS ENUM (
@@ -24,7 +25,7 @@ CREATE TYPE evidence_relationship AS ENUM (
   'INSUFFICIENT'
 );
 
-CREATE TYPE evidence_strength AS ENUM ('STRONG', 'MODERATE', 'WEAK', 'UNKNOWN');
+CREATE TYPE evidence_strength AS ENUM ('STRONG', 'MODERATE', 'WEAK');
 
 CREATE TYPE source_type AS ENUM (
   'WEB_PAGE',
@@ -39,7 +40,7 @@ CREATE TABLE investigations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id text NOT NULL CHECK (length(btrim(owner_id)) > 0),
   question text NOT NULL CHECK (length(btrim(question)) > 0),
-  status investigation_status NOT NULL DEFAULT 'DRAFT',
+  status investigation_status NOT NULL DEFAULT 'CREATED',
   idempotency_key text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -104,6 +105,7 @@ CREATE TABLE evidence (
   relationship evidence_relationship NOT NULL,
   strength evidence_strength NOT NULL,
   excerpt text NOT NULL CHECK (length(btrim(excerpt)) > 0),
+  reasoning text,
   idempotency_key text,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT evidence_claim_investigation_fk
@@ -126,7 +128,7 @@ CREATE TABLE evidence_changes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   investigation_id uuid NOT NULL,
   claim_id uuid NOT NULL,
-  previous_state claim_state,
+  previous_state claim_state NOT NULL,
   new_state claim_state NOT NULL,
   reason text NOT NULL CHECK (length(btrim(reason)) > 0),
   triggering_evidence_id uuid NOT NULL,
@@ -193,14 +195,19 @@ CREATE FUNCTION apply_claim_state_change()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
+DECLARE
+  updated integer;
 BEGIN
+  PERFORM set_config('evidenceos.state_change', 'on', true);
   UPDATE claims
   SET state = NEW.new_state
   WHERE investigation_id = NEW.investigation_id
     AND id = NEW.claim_id
     AND state IS NOT DISTINCT FROM NEW.previous_state;
+  GET DIAGNOSTICS updated = ROW_COUNT;
 
-  IF NOT FOUND THEN
+  PERFORM set_config('evidenceos.state_change', 'off', true);
+  IF updated = 0 THEN
     RAISE EXCEPTION 'Claim state does not match the recorded previous state.'
       USING ERRCODE = 'check_violation';
   END IF;
@@ -208,6 +215,26 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+-- A claim's first state may be set directly; every later change must go through evidence_changes.
+CREATE FUNCTION guard_claim_state()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF OLD.state IS NOT NULL
+     AND NEW.state IS DISTINCT FROM OLD.state
+     AND current_setting('evidenceos.state_change', true) IS DISTINCT FROM 'on' THEN
+    RAISE EXCEPTION 'Claim state may only change through an evidence_changes record.'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER claims_guard_state
+  BEFORE UPDATE OF state ON claims
+  FOR EACH ROW EXECUTE FUNCTION guard_claim_state();
 
 CREATE TRIGGER evidence_changes_apply_claim_state
   BEFORE INSERT ON evidence_changes

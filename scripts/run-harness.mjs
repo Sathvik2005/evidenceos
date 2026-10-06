@@ -65,6 +65,9 @@ function testStage(name, path) {
     }
   }
   const crashed = (json.numFailedTestSuites ?? 0) > 0 && failed === 0
+  if (crashed && !report.infrastructureFailures.some((f) => f.stage === name)) {
+    report.infrastructureFailures.push({ stage: name, detail: 'a test suite failed to run (no individual test failed)' })
+  }
   report.stages.push({ name, passed: failed === 0 && !crashed, total, failed })
 }
 
@@ -82,7 +85,7 @@ const gates = {
   semanticRegressions: report.semanticRegressions.length,
   infrastructureFailures: report.infrastructureFailures.length,
 }
-const passed = Object.values(gates).every((n) => n === 0) && report.stages.every((s) => s.passed || s.failed === 0)
+const passed = Object.values(gates).every((n) => n === 0) && report.stages.every((s) => s.passed)
 const outcome = { ...report, finishedAt: new Date().toISOString(), result: passed ? 'PASS' : 'FAIL' }
 writeFileSync(join(root, 'harness-report.json'), `${JSON.stringify(outcome, null, 2)}\n`)
 

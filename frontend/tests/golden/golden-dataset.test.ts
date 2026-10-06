@@ -37,6 +37,9 @@ let pg: PGlite
 let completeId = ''
 let partialId = ''
 let offlineId = ''
+let transitionId = ''
+let changesAfterSecondRun = 0
+let changesAfterThirdRun = 0
 let rerunBefore: number[] = []
 let rerunAfter: number[] = []
 let partialResult: Awaited<ReturnType<typeof runInvestigationWorkflow>>
@@ -62,6 +65,24 @@ beforeAll(async () => {
 
   partialId = await create('golden')
   partialResult = await runInvestigationWorkflow({ db: pg, llm: fixtureLlm(), search: corpus }, { investigationId: partialId, ownerId: 'golden', question: '' })
+
+  transitionId = await create('golden')
+  let phase = 1
+  const evolving: SearchProvider = {
+    async search(query) {
+      if (!query.includes('test scores')) return { documents: [] }
+      const partly = doc('scores-partly', 'Remote students partly improved reading scores in one district.')
+      return { documents: phase === 1 ? [partly] : [partly, doc('scores-down', 'Average math scores declined after the move to remote learning.')] }
+    },
+  }
+  const evolvingDeps = { db: pg, llm: fixtureLlm({ claims: [DEFAULT_CLAIMS[0]] }), search: evolving }
+  const evolvingInput = { investigationId: transitionId, ownerId: 'golden', question: '' }
+  await runInvestigationWorkflow(evolvingDeps, evolvingInput)
+  phase = 2
+  await runInvestigationWorkflow(evolvingDeps, evolvingInput)
+  changesAfterSecondRun = await count('SELECT count(*) n FROM evidence_changes WHERE investigation_id = $1', [transitionId])
+  await runInvestigationWorkflow(evolvingDeps, evolvingInput)
+  changesAfterThirdRun = await count('SELECT count(*) n FROM evidence_changes WHERE investigation_id = $1', [transitionId])
 
   offlineId = await create('golden')
   await runInvestigationWorkflow({ db: pg, llm: fixtureLlm({ claims: twoClaims }), search: offline, maxRetries: 1 }, { investigationId: offlineId, ownerId: 'golden', question: '' })
@@ -134,16 +155,20 @@ describe('golden dataset', () => {
     expect(validateAssessmentRules(assess({ causalStatus: 'CAUSATION' }), [ev('e1', 'SUPPORTS', 'STRONG')]).passed).toBe(true)
   })
 
-  it('G10 [HARD] state changes: a run records evidence-backed history with a real trigger', async () => {
-    const { rows } = await pg.query<{ previous_state: string | null; new_state: string; evidence_claim: string; claim: string }>(
-      `SELECT ch.previous_state, ch.new_state, e.claim_id AS evidence_claim, ch.claim_id AS claim
-       FROM evidence_changes ch JOIN evidence e ON e.id = ch.triggering_evidence_id WHERE ch.investigation_id = $1`, [completeId])
-    expect(rows).toHaveLength(2)
-    expect(rows.every((r) => r.previous_state === null && r.evidence_claim === r.claim)).toBe(true)
+  it('G10 [HARD] state changes: PARTIALLY_SUPPORTED -> new evidence -> CONFLICTING is recorded with a real trigger', async () => {
+    const { rows } = await pg.query<{ previous_state: string; new_state: string; relationship: string; evidence_claim: string; claim: string }>(
+      `SELECT ch.previous_state, ch.new_state, e.relationship, e.claim_id AS evidence_claim, ch.claim_id AS claim
+       FROM evidence_changes ch JOIN evidence e ON e.id = ch.triggering_evidence_id WHERE ch.investigation_id = $1`, [transitionId])
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ previous_state: 'PARTIALLY_SUPPORTED', new_state: 'CONFLICTING', relationship: 'CONTRADICTS' })
+    expect(rows[0]?.evidence_claim).toBe(rows[0]?.claim)
     expect(rules(validateStateChange({ claimId: 'c1', persistedState: 'SUPPORTED', previousState: 'SUPPORTED', newState: 'CONFLICTING', triggeringEvidence: null }))).toContain(RULES.CHANGE_TRIGGER_MISSING)
+    expect(rules(validateStateChange({ claimId: 'c1', persistedState: null, previousState: null, newState: 'SUPPORTED', triggeringEvidence: { id: 'e', claimId: 'c1' } }))).toContain(RULES.CHANGE_PREVIOUS_MISSING)
   })
 
   it('G11 [SEMANTIC] no state change: an unchanged outcome creates no history event', async () => {
+    expect(changesAfterSecondRun).toBe(1)
+    expect(changesAfterThirdRun).toBe(1)
     expect(rerunAfter[3]).toBe(rerunBefore[3])
     expect(rules(validateStateChange({ claimId: 'c1', persistedState: 'SUPPORTED', previousState: 'SUPPORTED', newState: 'SUPPORTED', triggeringEvidence: { id: 'e', claimId: 'c1' } }))).toContain(RULES.CHANGE_NO_DIFFERENCE)
   })
@@ -177,8 +202,10 @@ describe('golden dataset', () => {
   })
 
   it('G17 [HARD] historical state: change history is append-only', async () => {
-    await expect(pg.query("UPDATE evidence_changes SET reason = 'rewritten' WHERE investigation_id = $1", [completeId])).rejects.toThrow()
-    await expect(pg.query('DELETE FROM evidence_changes WHERE investigation_id = $1', [completeId])).rejects.toThrow()
+    await expect(pg.query("UPDATE evidence_changes SET reason = 'rewritten' WHERE investigation_id = $1", [transitionId])).rejects.toThrow()
+    await expect(pg.query('DELETE FROM evidence_changes WHERE investigation_id = $1', [transitionId])).rejects.toThrow()
+    // The earlier evidence also survives the state change.
+    expect(await count('SELECT count(*) n FROM evidence WHERE investigation_id = $1', [transitionId])).toBe(2)
   })
 
   it('G18 [HARD] traceability: every evidence row traces to a claim, a source URL and an excerpt', async () => {
@@ -188,12 +215,12 @@ describe('golden dataset', () => {
     expect(rows.every((r) => r.url.startsWith('https://') && r.excerpt.length > 0 && r.statement.length > 0)).toBe(true)
   })
 
-  it('G19 [SEMANTIC] human interpretation: state and confidence are separate and gaps stay visible', async () => {
+  it('G19 [SEMANTIC] human interpretation: state and confidence are separate and missing evidence is shown as INSUFFICIENT', async () => {
     const { rows } = await pg.query<{ state: string | null; confidence: string | null }>('SELECT state, confidence FROM claims WHERE investigation_id = $1 ORDER BY ordinal', [partialId])
     expect(rows[0]).toEqual({ state: 'CONFLICTING', confidence: 'MEDIUM' })
-    expect(rows[2]).toEqual({ state: null, confidence: null })
-    expect(partialResult.status).toBe('PARTIAL')
-    expect(partialResult.summary).toContain('unresolved')
+    expect(rows[2]).toEqual({ state: 'INSUFFICIENT', confidence: 'LOW' })
+    expect(partialResult.status).toBe('COMPLETED')
+    expect(partialResult.summary).toContain('1 INSUFFICIENT')
   })
 
   it('G20 [HARD] prompt injection: smuggled fields and instructions in evidence cannot change state', async () => {

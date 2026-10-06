@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { ApiResult } from '../../src/api/contracts'
 import {
   addClaim, addEvidence, addSource, createInvestigation, getInvestigation, listClaims,
-  listEvidenceChanges, listInvestigations, recordStateChange, type Database,
+  listEvidenceChanges, listInvestigations, recordClaimAssessment, recordStateChange, type Database,
 } from '../../src/api/operations'
 
 let pg: PGlite
@@ -42,6 +42,13 @@ async function seed(owner: string) {
   return { investigation, claim, source, evidence }
 }
 
+/** Gives the claim its first, directly stored state (a first assessment is not a change event). */
+async function assessFirst(owner: string, seeded: Awaited<ReturnType<typeof seed>>, state = 'PARTIALLY_SUPPORTED') {
+  return unwrap(await recordClaimAssessment(db, owner, {
+    investigationId: seeded.investigation.id, claimId: seeded.claim.id, confidence: 'MEDIUM', reason: 'First assessment.', initialState: state,
+  }))
+}
+
 describe('API operations: valid requests', () => {
   it('creates and reads related records', async () => {
     const { investigation, claim, evidence } = await seed('owner-valid')
@@ -52,13 +59,15 @@ describe('API operations: valid requests', () => {
   })
 
   it('records a state change and updates the claim', async () => {
-    const { investigation, claim, evidence } = await seed('owner-change')
+    const seeded = await seed('owner-change')
+    const { investigation, claim, evidence } = seeded
+    expect((await assessFirst('owner-change', seeded)).state).toBe('PARTIALLY_SUPPORTED')
     const change = unwrap(await recordStateChange(db, 'owner-change', {
-      investigationId: investigation.id, claimId: claim.id, previousState: null, newState: 'PARTIALLY_SUPPORTED',
-      reason: 'Initial assessment.', triggeringEvidenceId: evidence.id, idempotencyKey: 'k1',
+      investigationId: investigation.id, claimId: claim.id, previousState: 'PARTIALLY_SUPPORTED', newState: 'CONFLICTING',
+      reason: 'New contradicting evidence.', triggeringEvidenceId: evidence.id, idempotencyKey: 'k1',
     }))
-    expect(change.newState).toBe('PARTIALLY_SUPPORTED')
-    expect(unwrap(await listClaims(db, 'owner-change', investigation.id))[0]?.state).toBe('PARTIALLY_SUPPORTED')
+    expect(change.newState).toBe('CONFLICTING')
+    expect(unwrap(await listClaims(db, 'owner-change', investigation.id))[0]?.state).toBe('CONFLICTING')
     expect(unwrap(await listEvidenceChanges(db, 'owner-change', investigation.id))).toHaveLength(1)
   })
 
@@ -107,19 +116,20 @@ describe('API operations: invalid requests', () => {
   it('rejects a state change with a stale previous state or foreign evidence', async () => {
     const a = await seed('owner-state')
     const b = await seed('owner-state')
+    await assessFirst('owner-state', a)
     const stale = errorOf(await recordStateChange(db, 'owner-state', {
       investigationId: a.investigation.id, claimId: a.claim.id, previousState: 'SUPPORTED', newState: 'CONFLICTING',
       reason: 'Stale.', triggeringEvidenceId: a.evidence.id, idempotencyKey: 'stale',
     }))
     expect(stale.code).toBe('CONSTRAINT_VIOLATION')
     const foreign = errorOf(await recordStateChange(db, 'owner-state', {
-      investigationId: a.investigation.id, claimId: a.claim.id, previousState: null, newState: 'SUPPORTED',
+      investigationId: a.investigation.id, claimId: a.claim.id, previousState: 'PARTIALLY_SUPPORTED', newState: 'CONFLICTING',
       reason: 'Wrong evidence.', triggeringEvidenceId: b.evidence.id, idempotencyKey: 'foreign',
     }))
     expect(foreign.code).toBe('REFERENCE_INVALID')
-    expect(unwrap(await listClaims(db, 'owner-state', a.investigation.id))[0]?.state).toBeNull()
+    expect(unwrap(await listClaims(db, 'owner-state', a.investigation.id))[0]?.state).toBe('PARTIALLY_SUPPORTED')
     expect(errorOf(await recordStateChange(db, 'owner-state', {
-      investigationId: a.investigation.id, claimId: a.claim.id, previousState: 'SUPPORTED', newState: 'SUPPORTED',
+      investigationId: a.investigation.id, claimId: a.claim.id, previousState: 'PARTIALLY_SUPPORTED', newState: 'PARTIALLY_SUPPORTED',
       reason: 'No-op.', triggeringEvidenceId: a.evidence.id, idempotencyKey: 'noop',
     })).field).toBe('newState')
   })
@@ -157,9 +167,11 @@ describe('API operations: idempotency', () => {
   })
 
   it('does not duplicate state changes on retry', async () => {
-    const { investigation, claim, evidence } = await seed('owner-idem3')
+    const seeded = await seed('owner-idem3')
+    const { investigation, claim, evidence } = seeded
+    await assessFirst('owner-idem3', seeded)
     const input = {
-      investigationId: investigation.id, claimId: claim.id, previousState: null, newState: 'SUPPORTED' as const,
+      investigationId: investigation.id, claimId: claim.id, previousState: 'PARTIALLY_SUPPORTED' as const, newState: 'CONFLICTING' as const,
       reason: 'Assessed.', triggeringEvidenceId: evidence.id, idempotencyKey: 'change-1',
     }
     const first = unwrap(await recordStateChange(db, 'owner-idem3', input))

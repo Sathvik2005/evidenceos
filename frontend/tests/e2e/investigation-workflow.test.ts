@@ -62,7 +62,8 @@ describe('full investigation workflow (controlled fixture)', () => {
     // The contradicting evidence is persisted next to the supporting evidence, with provenance.
     expect(await count("SELECT count(*) n FROM evidence WHERE investigation_id = $1 AND relationship = 'CONTRADICTS'", [investigationId])).toBe(1)
     expect(await count('SELECT count(*) n FROM sources WHERE investigation_id = $1', [investigationId])).toBe(3)
-    expect(await count('SELECT count(*) n FROM evidence_changes WHERE investigation_id = $1', [investigationId])).toBe(2)
+    // First assessments are stored directly: they are not state changes, so there is no history yet.
+    expect(await count('SELECT count(*) n FROM evidence_changes WHERE investigation_id = $1', [investigationId])).toBe(0)
     const { rows } = await pg.query<{ status: string }>('SELECT status FROM investigations WHERE id = $1', [investigationId])
     expect(rows[0]?.status).toBe('READY')
     expect(result.summary).toContain('1 CONFLICTING')
@@ -80,20 +81,56 @@ describe('full investigation workflow (controlled fixture)', () => {
     expect(again.status).toBe('COMPLETED')
   })
 
-  it('never marks a claim supported without valid evidence, and flags the gap instead of hiding it', async () => {
+  it('never marks a claim supported without valid evidence; no evidence yields INSUFFICIENT', async () => {
     const investigationId = await newInvestigation('owner-c')
     const result = await runInvestigationWorkflow(
       { db: pg, llm: fixtureLlm(), search: corpus },
       { investigationId, ownerId: 'owner-c', question: '' },
     )
-    expect(result.status).toBe('PARTIAL')
-    expect(result.failures.some((f) => f.node === 'detectChange')).toBe(true)
+    expect(result.status).toBe('COMPLETED')
     expect(await count(
       `SELECT count(*) n FROM claims c WHERE investigation_id = $1 AND state = 'SUPPORTED'
        AND NOT EXISTS (SELECT 1 FROM evidence e WHERE e.claim_id = c.id AND e.relationship = 'SUPPORTS')`, [investigationId])).toBe(0)
-    const { rows } = await pg.query<{ status: string; state: string | null }>(
-      `SELECT i.status, (SELECT state FROM claims WHERE investigation_id = i.id AND ordinal = 3) AS state FROM investigations i WHERE id = $1`, [investigationId])
-    expect(rows[0]).toEqual({ status: 'REVIEW_REQUIRED', state: null })
+    const { rows } = await pg.query<{ status: string; state: string | null; confidence: string | null }>(
+      `SELECT i.status, (SELECT state FROM claims WHERE investigation_id = i.id AND ordinal = 3) AS state, (SELECT confidence FROM claims WHERE investigation_id = i.id AND ordinal = 3) AS confidence FROM investigations i WHERE id = $1`, [investigationId])
+    expect(rows[0]).toEqual({ status: 'READY', state: 'INSUFFICIENT', confidence: 'LOW' })
+  })
+})
+
+describe('change detection: new evidence changes a claim state', () => {
+  const partlyDoc = doc('scores-partly', 'Remote students partly improved reading scores in one district.')
+  const contradictingDoc = doc('scores-down', 'Average math scores declined after the move to remote learning.')
+
+  it('PARTIALLY_SUPPORTED -> new evidence -> CONFLICTING, recorded once with its trigger', async () => {
+    const investigationId = await newInvestigation('owner-h')
+    let phase = 1
+    const evolving: SearchProvider = {
+      async search(query) {
+        if (!query.includes('test scores')) return { documents: [] }
+        return { documents: phase === 1 ? [partlyDoc] : [partlyDoc, contradictingDoc] }
+      },
+    }
+    const deps = { db: pg, llm: fixtureLlm({ claims: [twoClaims[0] as string] }), search: evolving }
+    const input = { investigationId, ownerId: 'owner-h', question: '' }
+    const stateOf = async () => (await pg.query<{ state: string }>('SELECT state FROM claims WHERE investigation_id = $1', [investigationId])).rows[0]?.state
+
+    await runInvestigationWorkflow(deps, input)
+    expect(await stateOf()).toBe('PARTIALLY_SUPPORTED')
+    expect(await count('SELECT count(*) n FROM evidence_changes WHERE investigation_id = $1', [investigationId])).toBe(0)
+
+    phase = 2
+    const second = await runInvestigationWorkflow(deps, input)
+    expect(second.status).toBe('COMPLETED')
+    expect(await stateOf()).toBe('CONFLICTING')
+    const { rows } = await pg.query<{ previous_state: string; new_state: string; relationship: string; excerpt: string }>(
+      `SELECT ch.previous_state, ch.new_state, e.relationship, e.excerpt FROM evidence_changes ch
+       JOIN evidence e ON e.id = ch.triggering_evidence_id WHERE ch.investigation_id = $1`, [investigationId])
+    expect(rows).toEqual([{ previous_state: 'PARTIALLY_SUPPORTED', new_state: 'CONFLICTING', relationship: 'CONTRADICTS', excerpt: contradictingDoc.text }])
+    // The earlier evidence is kept; nothing is deleted because the state changed.
+    expect(await count('SELECT count(*) n FROM evidence WHERE investigation_id = $1', [investigationId])).toBe(2)
+
+    await runInvestigationWorkflow(deps, input) // same evidence again: no change, no new history
+    expect(await count('SELECT count(*) n FROM evidence_changes WHERE investigation_id = $1', [investigationId])).toBe(1)
   })
 })
 

@@ -1,7 +1,7 @@
 // Real node handlers for the investigation workflow (Prompt 11). Each node does one job,
 // persists through the typed API, and records explicit failures instead of hiding them.
 import {
-  addClaim, addEvidence, addSource, getInvestigation, listClaims, recordClaimAssessment,
+  addClaim, addEvidence, addSource, getInvestigation, listClaims, listEvidence, recordClaimAssessment,
   recordStateChange, setInvestigationStatus, type Database,
 } from '../api/operations'
 import type { ApiResult } from '../api/contracts'
@@ -93,7 +93,9 @@ export function createWorkflowHandlers(deps: WorkflowDeps): NodeHandlers {
     async load(state) {
       const investigation = unwrap(await getInvestigation(db, state.ownerId, state.investigationId))
       const claims = unwrap(await listClaims(db, state.ownerId, state.investigationId, MAX_PAGE))
+      const prior = unwrap(await listEvidence(db, state.ownerId, state.investigationId, MAX_PAGE))
       return {
+        priorEvidenceIds: prior.map((e) => e.id),
         question: investigation.question,
         claims: claims.map((c) => ({ id: c.id, ordinal: c.ordinal, statement: c.statement, state: c.state })),
       }
@@ -190,6 +192,7 @@ export function createWorkflowHandlers(deps: WorkflowDeps): NodeHandlers {
             const evidence = unwrap(await addEvidence(db, state.ownerId, {
               investigationId: state.investigationId, claimId: claim.id, sourceId: source.id,
               relationship: candidate.relationship, strength: candidate.strength, excerpt: candidate.excerpt,
+              ...(candidate.reasoning ? { reasoning: candidate.reasoning } : {}),
               idempotencyKey: `ev:${claim.id}:${fnv1a(`${url}|${candidate.excerpt}`)}`,
             }))
             kept.push({
@@ -254,20 +257,21 @@ export function createWorkflowHandlers(deps: WorkflowDeps): NodeHandlers {
     },
 
     async persistState(state) {
+      // A claim's FIRST assessment is stored directly (it is not a "change"); later changes are
+      // recorded by detectChange against the persisted previous state.
       const failures: WorkflowFailure[] = []
       for (const outcome of Object.values(state.outcomes)) {
         const assessment = state.assessments[outcome.claimId]
-        // No retained evidence means no state can be recorded (history needs a trigger), so do not
-        // persist a lone confidence either: the claim stays visibly unassessed.
-        if (!assessment || (state.persistedEvidence[outcome.claimId] ?? []).length === 0) continue
+        const claim = state.claims.find((c) => c.id === outcome.claimId)
+        if (!assessment || !claim || claim.state !== null) continue
         try {
           unwrap(await recordClaimAssessment(db, state.ownerId, {
-            investigationId: state.investigationId, claimId: outcome.claimId,
-            confidence: outcome.confidence, reason: assessment.rationale,
+            investigationId: state.investigationId, claimId: claim.id,
+            confidence: outcome.confidence, reason: assessment.rationale, initialState: outcome.state,
           }))
         } catch (error) {
           if (FATAL.has(kindOf(error))) throw error
-          failures.push(failure('persistState', kindOf(error), 'Assessment could not be persisted.', outcome.claimId))
+          failures.push(failure('persistState', kindOf(error), 'Assessment could not be persisted.', claim.id))
         }
       }
       return { failures }
@@ -275,27 +279,44 @@ export function createWorkflowHandlers(deps: WorkflowDeps): NodeHandlers {
 
     async detectChange(state) {
       const failures: WorkflowFailure[] = []
+      const prior = new Set(state.priorEvidenceIds)
       for (const outcome of Object.values(state.outcomes)) {
         const claim = state.claims.find((c) => c.id === outcome.claimId)
         const assessment = state.assessments[outcome.claimId]
-        if (!claim || !assessment || claim.state === outcome.state) continue // no meaningful difference: no event
+        if (!claim || !assessment || claim.state === null) continue // first assessments are not changes
 
-        const evidence = state.persistedEvidence[claim.id] ?? []
-        const trigger = evidence.find((e) => assessment.evidenceIds.includes(e.id)) ?? null
-        const check = validateStateChange({
-          claimId: claim.id, persistedState: claim.state, previousState: claim.state, newState: outcome.state,
-          triggeringEvidence: trigger ? { id: trigger.id, claimId: trigger.claimId } : null,
-        })
-        if (!check.passed) {
-          // e.g. INSUFFICIENT with no evidence cannot be recorded: the history requires a trigger.
-          failures.push(failure('detectChange', 'VALIDATION', `State change not recorded: ${check.violations.map((v) => v.rule).join(', ')}`, claim.id))
-          continue
-        }
         try {
+          if (claim.state === outcome.state) {
+            // No meaningful difference: no history event, but the current confidence/reason are refreshed.
+            unwrap(await recordClaimAssessment(db, state.ownerId, {
+              investigationId: state.investigationId, claimId: claim.id,
+              confidence: outcome.confidence, reason: assessment.rationale,
+            }))
+            continue
+          }
+
+          // The trigger must be evidence that is NEW in this run; prefer the kind that explains the change.
+          const cited = (state.persistedEvidence[claim.id] ?? []).filter((e) => assessment.evidenceIds.includes(e.id))
+          const fresh = cited.filter((e) => !prior.has(e.id))
+          const wanted = outcome.state === 'CONFLICTING' ? 'CONTRADICTS' : outcome.state === 'INSUFFICIENT' ? 'INSUFFICIENT' : 'SUPPORTS'
+          const trigger = fresh.find((e) => e.relationship === wanted) ?? fresh[0] ?? cited[0] ?? null
+          const check = validateStateChange({
+            claimId: claim.id, persistedState: claim.state, previousState: claim.state, newState: outcome.state,
+            triggeringEvidence: trigger ? { id: trigger.id, claimId: trigger.claimId } : null,
+            triggerIsNew: trigger ? !prior.has(trigger.id) : false,
+          })
+          if (!check.passed) {
+            failures.push(failure('detectChange', 'VALIDATION', `State change not recorded: ${check.violations.map((v) => v.rule).join(', ')}`, claim.id))
+            continue
+          }
           unwrap(await recordStateChange(db, state.ownerId, {
             investigationId: state.investigationId, claimId: claim.id, previousState: claim.state, newState: outcome.state,
             reason: assessment.rationale, triggeringEvidenceId: trigger?.id ?? '',
-            idempotencyKey: `chg:${claim.id}:${claim.state ?? 'NONE'}>${outcome.state}`,
+            idempotencyKey: `chg:${claim.id}:${claim.state}>${outcome.state}:${trigger?.id ?? ''}`,
+          }))
+          unwrap(await recordClaimAssessment(db, state.ownerId, {
+            investigationId: state.investigationId, claimId: claim.id,
+            confidence: outcome.confidence, reason: assessment.rationale,
           }))
         } catch (error) {
           if (FATAL.has(kindOf(error))) throw error
@@ -306,8 +327,7 @@ export function createWorkflowHandlers(deps: WorkflowDeps): NodeHandlers {
     },
 
     async summarize(state) {
-      // Only outcomes backed by retained evidence are recorded in history; the rest stay unresolved.
-      const recorded = Object.values(state.outcomes).filter((o) => (state.persistedEvidence[o.claimId] ?? []).length > 0)
+      const recorded = Object.values(state.outcomes)
       const counts = new Map<string, number>()
       for (const outcome of recorded) counts.set(outcome.state, (counts.get(outcome.state) ?? 0) + 1)
       const unresolved = state.claims.length - recorded.length
