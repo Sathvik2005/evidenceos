@@ -145,4 +145,4 @@ Open the app and choose **View the demo investigation**. New investigations are 
 
 ## License / Author
 
-No license file yet. Built by Sathvik.
+[MIT](LICENSE). Built by Sathvik. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).

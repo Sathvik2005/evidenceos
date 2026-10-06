@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-EvidenceOS: an evidence operating system (question → claims → sources → evidence → evaluation → change detection). Strict TypeScript React 19/Vite npm workspace (single package `frontend` = `@evidenceos/frontend`). Prompts 01–21 are built (see `IMPLEMENTATION_PROGRESS.md`; most are marked Provisional because the authoritative specs and a Momen export are missing); Prompt 22 (final audit) is not started. The system has agents, deterministic validation, the full workflow, a harness, a server/HTTP API, a UI and a demo corpus.
+EvidenceOS: an evidence operating system (question → claims → sources → evidence → evaluation → change detection). Strict TypeScript React 19/Vite npm workspace (single package `frontend` = `@evidenceos/frontend`). Prompts 01–22 are built (see `IMPLEMENTATION_PROGRESS.md`; most are marked Provisional because the authoritative specs and a Momen export are missing); the final audit is in `docs/FINAL_AUDIT.md`. A seeded demo runs locally with `npm run dev:api` (no keys). The system has agents, deterministic validation, the full workflow, a harness, a server/HTTP API, a UI and a demo corpus.
 
 ## Commands (run from repo root)
 

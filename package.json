@@ -20,5 +20,14 @@
     "dev:api": "tsx scripts/dev-server.mts",
     "seed:advance": "node scripts/seed-advance.mjs",
     "seed": "tsx --env-file=.env.local scripts/seed.mts"
+  },
+  "description": "Evidence operating system: turns a question into claims, sourced evidence, contradictions and a claim state whose changes are recorded.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sathvik2005/evidenceos.git"
   }
 }
