@@ -56,7 +56,8 @@ export function useResource<T>(
   }, [tick, intervalMs])
 
   const reload = useCallback(() => {
-    setResource({ status: 'loading' })
+    // Keep showing the last good data while refreshing; only an empty or failed view shows loading.
+    setResource((previous) => (previous.status === 'ready' ? previous : { status: 'loading' }))
     setTick((n) => n + 1)
   }, [])
   return { resource, reload }

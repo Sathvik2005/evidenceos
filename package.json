@@ -14,6 +14,8 @@
     "test:contracts": "npm run test:contracts --workspace=@evidenceos/frontend",
     "test:golden": "npm run test:golden --workspace=@evidenceos/frontend",
     "test:e2e": "npm run test:e2e --workspace=@evidenceos/frontend",
-    "db:migrate": "node scripts/migrate.mjs"
+    "db:migrate": "node scripts/migrate.mjs",
+    "demo:seed": "tsx --env-file=.env.local scripts/demo.ts seed",
+    "demo:advance": "tsx --env-file=.env.local scripts/demo.ts advance"
   }
 }

@@ -20,6 +20,8 @@ const report = {
   semanticRegressions: [],
   infrastructureFailures: [],
   modelVariance: [],
+  // Failure-injection cases (tests tagged [FAILURE]) are summarized so the report shows what was injected.
+  failureInjection: { total: 0, passed: 0, cases: [] },
 }
 
 const STAGE_TIMEOUT_MS = 5 * 60 * 1000
@@ -59,6 +61,11 @@ function testStage(name, path) {
     }
     for (const test of file.assertionResults ?? []) {
       total += 1
+      if (test.fullName.includes('[FAILURE]')) {
+        report.failureInjection.total += 1
+        if (test.status === 'passed') report.failureInjection.passed += 1
+        report.failureInjection.cases.push({ name: test.fullName.split('[FAILURE]').pop().trim(), status: test.status })
+      }
       if (test.status !== 'failed') continue
       failed += 1
       const entry = { stage: name, test: test.fullName, detail: String((test.failureMessages ?? [])[0] ?? '').split('\n')[0].slice(0, 300) }
@@ -104,5 +111,8 @@ show('HARD-RULE FAILURES (blocking)', report.hardRuleFailures)
 show('SEMANTIC REGRESSIONS (blocking)', report.semanticRegressions)
 show('INFRASTRUCTURE FAILURES (blocking, not a behavior verdict)', report.infrastructureFailures)
 show('MODEL VARIANCE (non-blocking)', report.modelVariance)
+if (report.failureInjection.total > 0) {
+  console.log(`\nFailure injection: ${report.failureInjection.passed}/${report.failureInjection.total} cases handled safely`)
+}
 console.log(`\nHARNESS ${outcome.result}  (report: harness-report.json)`)
 process.exitCode = passed ? 0 : report.infrastructureFailures.length > 0 ? 2 : 1
