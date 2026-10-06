@@ -1,0 +1,13 @@
+# Not needed at build or run time on Vercel
+.data/
+.env*
+EvidenceOS_COMPLETE_PACKAGE/
+harness-report.json
+frontend/tests/
+docs/
+demo/
+scripts/dev-server.mts
+scripts/demo.mts
+scripts/seed.mts
+scripts/seed-advance.mjs
+backend/

@@ -34,6 +34,18 @@ Never put these under a `VITE_` prefix: that would ship them to the browser.
 3. Set the environment variables, then deploy.
 4. Smoke test (below). Seed the demo if you want one ([`DEMO.md`](DEMO.md)).
 
+## CLI setup (done once for this project)
+
+```sh
+vercel link --yes --project evidenceos --scope <your-scope>   # creates/links the project; .vercel/ is git-ignored
+npm run vercel:env            # pushes DATABASE_URL, provider keys, demo ids and APPLICATION_ENV from .env.local (names only are printed; empty values skipped)
+vercel build --prod           # local build check: static output + the /api function
+vercel deploy --prod          # publish
+```
+
+Add `ANTHROPIC_API_KEY` and `TAVILY_API_KEY` to `.env.local`, then re-run `npm run vercel:env` and redeploy to enable live research.
+The GitHub auto-deploy integration needs the Vercel GitHub app to have access to the repository; until then deploy with the CLI.
+
 ## Smoke test (production-like)
 
 ```sh

@@ -14,3 +14,8 @@ harness-report.json
 
 # Local development database (PGlite)
 .data/
+
+# Vercel project link
+.vercel
+
+.vercel
