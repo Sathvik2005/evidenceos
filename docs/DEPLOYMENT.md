@@ -1,7 +1,9 @@
 # Deployment (Vercel + PostgreSQL)
 
-Status: the configuration is written and tested locally; it has **not** been deployed or run against a
-hosted database or live providers from this repository. Use the smoke test below to verify it.
+Status: the configuration is written and tested locally. The database path was verified on 2026-10-06 against a hosted
+Supabase PostgreSQL: use the **Session pooler** connection string, because the direct `db.<ref>.supabase.co` host is
+IPv6-only and fails on IPv4-only networks. The Vercel deployment and live Anthropic/Tavily runs have **not** been done;
+use the smoke test below to verify them.
 
 ## What gets deployed
 
