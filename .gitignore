@@ -7,3 +7,6 @@ coverage/
 .env
 .env.*
 !.env.example
+
+# Spec package (local reference only)
+EvidenceOS_COMPLETE_PACKAGE/
