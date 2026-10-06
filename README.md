@@ -1,106 +1,136 @@
-# EvidenceOS
+<div align="center">
+
+# 🔎 EvidenceOS
 
 **Build evidence. Track change. Understand what holds up.**
 
-EvidenceOS is an evidence operating system for complex questions. Instead of one AI answer, it turns a
-question into a structured, inspectable evidence state: claims, sources, evidence, contradictions, an
-evaluated claim state, and a history of how that state changed when new evidence arrived.
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![LangGraph](https://img.shields.io/badge/LangGraph-workflow-1C3C3C)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-state-4169E1?logo=postgresql&logoColor=white)
+![Status](https://img.shields.io/badge/status-experimental%20MVP-orange)
 
-> **LLMs interpret. Evidence provides grounding. Structured state provides memory. Deterministic rules provide control.**
+An evidence operating system that turns a complex question into claims, sourced evidence, contradictions and a claim state that changes, visibly, when new evidence arrives.
+
+</div>
+
+## Overview
+
+AI tools usually return one confident answer and discard how they got there. EvidenceOS keeps the work: it breaks a question into claims, retrieves real sources, records supporting **and** contradicting evidence with provenance, and stores what the evidence currently supports. When new evidence appears, the claim is re-assessed and any change is written to an append-only history.
+
+## Why it matters
+
+- **Traceable.** Every conclusion links to a verbatim excerpt, its source and the reason it was linked.
+- **Contradiction-aware.** Disagreement is stored and shown, never averaged away.
+- **State ≠ confidence.** *What the evidence supports* and *how sure we are* are separate fields.
+- **Model-independent integrity.** An LLM can propose; deterministic rules decide what is allowed to become state.
+- **Change is a feature.** `PARTIALLY SUPPORTED → new evidence → CONFLICTING` is recorded with its trigger, not silently overwritten.
+
+## How it works
 
 ```text
-Question → Claims → Sources → Evidence → Relationships → Validation → Evaluation → Evidence State → Change History
+Question → Claims → Research (real sources) → Evidence → Validation → Analysis → Evaluation → Claim state → Change history
+              LLM        LLM + retrieval     verbatim      rules         LLM        LLM audit    persisted     append-only
 ```
 
-Each claim is **Supported**, **Partially supported**, **Conflicting** or **Insufficient** (state), with a
-separate **High / Medium / Low** confidence. EvidenceOS does not decide what is true; it shows what the
-available evidence currently supports, where it conflicts, and what changed.
+## Key features
 
-```text
-PARTIALLY SUPPORTED  →  NEW EVIDENCE  →  CONFLICTING      (recorded, with the triggering evidence)
-```
-
-## Status
-
-Prompts 01–21 are built and verified by `npm run harness`; the final audit is in
-[`docs/FINAL_AUDIT.md`](docs/FINAL_AUDIT.md). Most prompts are marked **Provisional** because the
-authoritative specification files (`DATA_MODEL.md`, `RULES.md`, …) and a Momen project export are not in
-this repository. Read [Known limitations](#known-limitations) before relying on it.
+- 🧩 **Claim decomposition** into atomic, researchable claims
+- 📎 **Provenance by construction**: quotes must appear verbatim in retrieved text; the model cannot supply URLs, titles or dates
+- ⚖️ **Four states** (Supported, Partially supported, Conflicting, Insufficient) with separate High/Medium/Low confidence
+- 🛡️ **Hard rules override the model**, including the evaluator's score
+- 🕰️ **Immutable history** enforced by database triggers
+- 🔁 **Idempotent, bounded workflow**: retries are capped; re-runs create no duplicates; partial failures are reported, not hidden
+- 🧭 **Inspectable UI**: claim detail, evidence graph with a text equivalent, state history
 
 ## Architecture
 
-```text
-Browser (React + Vite + TypeScript)
-        │  same-origin /api
-Vercel Function  ──►  HTTP API ──► typed, owner-scoped operations ──► PostgreSQL
-        │
-        └─ LangGraph workflow ─► Claim Decomposer → Research → [validation] → Evidence Analyst
-                                  → [deterministic validation] → Evaluator → persist → change detection
+```mermaid
+flowchart LR
+  B[Browser<br/>React + Vite] -->|same-origin /api| F[Vercel Function<br/>HTTP API]
+  F --> O[Typed, owner-scoped<br/>operations]
+  F -->|starts| W[LangGraph workflow]
+  W --> A1[Claim Decomposer]
+  W --> A2[Research Agent]
+  W --> V[Deterministic validation]
+  W --> A3[Evidence Analyst]
+  W --> A4[Evaluator]
+  A2 --> S[(Search provider)]
+  A1 & A3 & A4 --> L[(LLM provider)]
+  V --> O
+  O --> P[(PostgreSQL<br/>claims · evidence · sources · history)]
 ```
 
-Details, trust boundaries and deviations: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+## Tech stack
 
-## Quick start
+| Layer | Technology |
+| --- | --- |
+| UI | React 19, Vite, strict TypeScript, hand-written CSS tokens (light and dark) |
+| Workflow | LangGraph (`@langchain/langgraph`) |
+| Models and retrieval | Anthropic SDK, Tavily (behind provider-neutral interfaces) |
+| Data | PostgreSQL via `pg`; PGlite for tests |
+| Hosting | Vercel (configured, not yet deployed) |
+| Quality | Vitest, Testing Library, custom harness |
 
-Requires Node.js 20.19+ (or 22.12+) and npm.
+## Demo
+
+The demo question is **“Does remote learning improve student outcomes?”** over three real, verified public sources (`demo/corpus.json`). Script, checklist and recovery steps: [`docs/DEMO.md`](docs/DEMO.md).
+
+> 📷 *Screenshots / demo video: not yet recorded. Add them under `docs/media/` and link them here.*
+
+## Project structure
+
+```text
+api/                 Vercel Function entry (/api/*)
+frontend/src/
+  agents/            Claim Decomposer, Research, Evidence Analyst, Evaluator
+  validation/        Deterministic hard rules
+  workflow/          LangGraph graph, node handlers, retries
+  api/               Typed contracts and owner-scoped operations
+  server/            HTTP app, config, adapters (Anthropic, Tavily, PostgreSQL)
+  pages/ components/ graph/ gateway/   UI and browser client
+database/migrations/ PostgreSQL schema
+demo/                Recorded, verified source corpus
+scripts/             Harness, migrations, demo driver
+docs/                Architecture, deployment, security, operations, ADRs, audit
+```
+
+## Getting started
+
+Requires Node.js 20.19+ (or 22.12+).
 
 ```sh
 npm install
-npm run typecheck && npm run lint && npm test   # everything runs on an in-memory PostgreSQL; no services needed
-npm run harness                                  # static checks + unit + contracts + golden + e2e, with a report
-npm run dev --workspace=@evidenceos/frontend     # UI only; the API needs the server configuration below
+npm run harness      # typecheck, lint, unit, contracts, golden, e2e (in-memory PostgreSQL; no services needed)
+npm run build
 ```
 
-## Configuration
+To run the full app you need a PostgreSQL database and provider keys; see [`.env.example`](.env.example), then `npm run db:migrate`. Deployment steps and the smoke test are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md). The Vite dev server (`npm run dev --workspace=@evidenceos/frontend`) serves the UI only, not `/api`.
 
-Copy `.env.example` to `.env.local`. Names only are listed here; never commit values.
+## Engineering principles
 
-| Variable | Where | Purpose |
-| --- | --- | --- |
-| `DATABASE_URL` | server | PostgreSQL connection string (required) |
-| `ANTHROPIC_API_KEY`, `LLM_MODEL` | server | Language model for the agents |
-| `TAVILY_API_KEY`, `RESEARCH_PROVIDER` | server | Web retrieval for the Research Agent |
-| `APPLICATION_ENV` | server | `development`, `test`, `demo` or `production` |
-| `DEMO_INVESTIGATION_ID`, `DEMO_OWNER_ID` | server | Optional read-only public demo investigation |
-| `VITE_MOMEN_GRAPHQL_URL`, `VITE_MOMEN_SUBSCRIPTION_URL` | public | Momen endpoints (diagnostic only today) |
-| `MOMEN_ADMIN_TOKEN` | server only | Never exposed to the browser; unused by the app |
+- **LLMs interpret; evidence grounds; structured state remembers; deterministic rules control.**
+- **No fabricated provenance:** retrieval supplies sources, the model only points and quotes.
+- **Fail explicitly:** classified failures, bounded retries, `REVIEW_REQUIRED` instead of a fake success.
+- **Insufficient is a valid answer.** Overconfidence is treated as a defect.
+- **Append-only history,** enforced in the database rather than by convention.
 
-Without model and retrieval keys the server still serves reads and `/api/health`, and refuses new
-investigations with an explicit "research is not configured" error.
+## Status
 
-## Commands
+🧪 **Experimental MVP.** All 182 automated tests and 10 failure-injection cases pass (`npm run harness`). It has **not** yet been deployed, or run against live Anthropic, Tavily or a hosted database. The authoritative spec files other than `agents.md` and the system design are not in this repository, and Momen is deferred ([ADR-010](docs/adr/ADR-010-postgresql-direct-backend.md)). There are no accounts or rate limits yet. Full audit: [`docs/FINAL_AUDIT.md`](docs/FINAL_AUDIT.md).
 
-| Command | What it does |
-| --- | --- |
-| `npm run typecheck` / `lint` / `test` / `build` | Standard checks and production build |
-| `npm run test:contracts` / `test:golden` / `test:e2e` | One test layer |
-| `npm run harness` | Full gate; writes `harness-report.json` (hard-rule failures, semantic regressions, infrastructure failures, model variance, failure-injection summary) |
-| `npm run db:migrate` | Apply `database/migrations/*.sql` to `DATABASE_URL` |
-| `npm run demo:seed` / `demo:advance` | Seed the demo investigation / reveal the new evidence ([`docs/DEMO.md`](docs/DEMO.md)) |
-| `npm run momen:check` | Anonymous probe of the Momen endpoint |
+## Roadmap
+
+- First deployment and live-provider smoke test
+- Durable workflow checkpoints (today: idempotent re-run and stale-run takeover)
+- Accounts, rate limiting and cost controls before public use
+- Momen integration if a project export is provided
+- Screen-reader and automated accessibility audit
 
 ## Documentation
 
-| Document | Contents |
-| --- | --- |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | As-built architecture, data model, trust boundaries |
-| [`docs/api-contracts.md`](docs/api-contracts.md) | Operations and HTTP API |
-| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Vercel + PostgreSQL deployment, smoke test, rollback and recovery |
-| [`docs/DEMO.md`](docs/DEMO.md) | Demo script, checklist, recovery |
-| [`docs/FINAL_AUDIT.md`](docs/FINAL_AUDIT.md) | Prompt 22 audit |
-| [`docs/momen-setup.md`](docs/momen-setup.md) | Momen configuration and its current status |
-| [`IMPLEMENTATION_PROGRESS.md`](IMPLEMENTATION_PROGRESS.md) | Per-prompt status and system-design conformance |
+[`docs/README.md`](docs/README.md) is the index: architecture, API contracts, deployment, demo, security, operations, ADRs and the final audit.
 
-## Known limitations
+## License / Author
 
-- **Momen is not connected.** The specification names Momen as the backend; its GraphQL introspection is
-  disabled and no project export exists, so the API talks to PostgreSQL directly. This needs an explicit
-  decision (see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)).
-- **Specifications missing.** `DATA_MODEL.md`, `RULES.md`, `PRD.md`, `GOLDEN_SPECS.md` and the others are
-  not in the repository; the schema, enums and golden cases are derived from `agents.md` and the system design.
-- **Not run against live providers or a hosted database in this repository's history.** All tests use an
-  in-memory PostgreSQL and scripted model/retrieval doubles; the Anthropic, Tavily, `pg` and Vercel
-  integrations are implemented but unverified until configured and smoke-tested ([`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)).
-- **No accounts.** Ownership is an anonymous per-browser cookie; clearing it loses access to your investigations.
-- **Workflow checkpoints are in memory.** A cut-off run is recovered by re-running, which reuses saved work
-  idempotently (claims, sources, evidence, history) but repeats model calls.
+No license file yet. Built by Sathvik.

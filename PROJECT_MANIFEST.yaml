@@ -1,0 +1,105 @@
+# Machine-readable summary of the repository as it is. Keep it truthful: a capability is
+# `true` only when it exists in code, and `configured`/`not_connected` mean what they say.
+project:
+  name: EvidenceOS
+  stage: hackathon
+  tagline: "Build evidence. Track change. Understand what holds up."
+  implementation_prompts_built: "01-22"
+  spec_status: "Authoritative specs other than agents.md and system design are not in the repository"
+
+frontend:
+  framework: React 19
+  language: TypeScript (strict)
+  build: Vite
+  styling: hand-written CSS tokens (no Tailwind, no shadcn/ui)
+  routes: [/, /investigations/new, /investigations/:id, /investigations/:id/claims/:claimId, /investigations/:id/graph]
+  change_history_route: false   # history is shown inside the investigation and claim pages; no /changes route
+  dark_mode: true
+  hosting: Vercel   # configured in vercel.json, not yet deployed
+
+backend:
+  platform: none    # the API is served directly by this repository
+  api: "HTTP JSON API in frontend/src/server, exposed by the Vercel Function api/[...path].ts"
+  momen:
+    status: not_connected
+    note: "Momen is deferred: PostgreSQL-direct was approved on 2026-10-06 (docs/adr/ADR-010, supersedes ADR-005). No Momen export or actions exist."
+
+workflow:
+  framework: LangGraph
+  checkpointer: in_memory      # not durable; recovery is an idempotent re-run plus stale-run takeover
+  resumable_from_checkpoint: false
+  retries_max: 2
+
+ai:
+  framework: "@langchain/langgraph for orchestration; provider SDK adapters (no LangChain retrieval abstractions)"
+  llm_provider: Anthropic
+  llm_model_default: claude-sonnet-5-5
+  research_provider: Tavily
+  live_providers_verified: false
+
+database:
+  engine: PostgreSQL
+  access: "pg pool (production), PGlite (tests)"
+  migrations: database/migrations
+  integrity: [foreign_keys_restrict, check_constraints, state_change_trigger, append_only_history_trigger]
+
+agents:
+  - Claim Decomposer
+  - Research Agent
+  - Evidence Analyst
+  - Evaluator
+
+validation:
+  deterministic_rules: frontend/src/validation/rules.ts
+  hard_rules_override_evaluator: true
+
+security:
+  authentication: false        # anonymous HttpOnly cookie scopes records; no accounts
+  rate_limiting: false
+  secrets_server_side_only: true
+  threat_model: docs/security/THREAT_MODEL.md
+
+testing:
+  unit: true
+  contract: true
+  golden: true
+  failure_injection: true
+  e2e: true
+  harness: true
+  ci: false
+
+observability:
+  structured_logs: true
+  metrics: false
+  tracing_backend: false
+  durable_run_history: false
+
+documentation:
+  system_design: "EvidenceOS_COMPLETE_PACKAGE/implementation-prompts/system dessign.md"
+  architecture: docs/ARCHITECTURE.md
+  api_contracts: docs/engineering/API_CONTRACTS.md
+  security: docs/security
+  operations: docs/operations
+  adr: docs/adr
+  deployment: docs/DEPLOYMENT.md
+  demo: docs/DEMO.md
+  final_audit: docs/FINAL_AUDIT.md
+  data_model_spec: false       # DATA_MODEL.md is not in the repository
+  agent_spec: false            # AGENT_SPEC.md is not in the repository
+  workflow_spec: false         # WORKFLOW.md is not in the repository
+  evaluation_spec: false       # EVALUATION.md is not in the repository
+
+deployment:
+  frontend: Vercel (configured, not deployed)
+  api: Vercel Function (configured, not deployed)
+  database: "any PostgreSQL 15+ (hosted instance not provisioned by this repository)"
+  health_endpoint: /api/health
+
+commands:
+  typecheck: npm run typecheck
+  lint: npm run lint
+  test: npm test
+  harness: npm run harness
+  build: npm run build
+  migrate: npm run db:migrate
+  demo: [npm run demo:seed, npm run demo:advance]

@@ -49,7 +49,7 @@ Failures are classified (`VALIDATION`, `PROVIDER`, `TIMEOUT`, `RATE_LIMIT`, `MAL
 
 | # | Deviation | Why | Needed |
 | --- | --- | --- | --- |
-| 1 | **No Momen.** The API talks to PostgreSQL directly; the target is Frontend → Momen → workflow → PostgreSQL. | Momen's GraphQL introspection is disabled and no project export exists, so its schema and actions cannot be verified. | A decision: provide a Momen export/actions, or approve PostgreSQL-direct as the backend. |
+| 1 | **No Momen.** The API talks to PostgreSQL directly; the target was Frontend → Momen → workflow → PostgreSQL. | Momen's GraphQL introspection is disabled and no project export exists, so its schema and actions cannot be verified. | **Accepted** by the owner on 2026-10-06 ([ADR-010](adr/ADR-010-postgresql-direct-backend.md)); revisit if a Momen export is provided. |
 | 2 | Workflow checkpoints are in memory (`MemorySaver`), not durable (§35, §48). | No durable checkpointer was configured. | Recovery today is re-run (idempotent) plus stale-run takeover after 10 minutes without progress. |
 | 3 | UI built with hand-written CSS tokens, not Tailwind/shadcn. | Avoid adding a styling stack for a small UI. | Optional. |
 | 4 | Specs absent: `DATA_MODEL.md`, `RULES.md`, `PRD.md`, `GOLDEN_SPECS.md`, `UI_SPEC.md`, … | Not in the supplied package. | Supply them for a true spec audit. |

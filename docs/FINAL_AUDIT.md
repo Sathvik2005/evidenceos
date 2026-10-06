@@ -19,7 +19,7 @@ environment), **FAIL**. Nothing below is marked PASS on the basis of intent.
 
 | # | Item | Verdict | Evidence and caveats |
 | --- | --- | --- | --- |
-| 1 | Architecture invariants | **CONDITIONAL** | Holds: UI → API → LangGraph → agents → deterministic validation → evaluator → PostgreSQL → UI; no agent swarm; state ownership centralized. **Does not hold: Momen is not in the path** (introspection disabled, no export). PostgreSQL is accessed directly. Needs an explicit decision. |
+| 1 | Architecture invariants | **PASS** (with one approved deviation) | Holds: UI → API → LangGraph → agents → deterministic validation → evaluator → PostgreSQL → UI; no agent swarm; state ownership centralized. **Deviation: Momen is not in the path** (introspection disabled, no export); PostgreSQL is accessed directly. The owner approved this on 2026-10-06 ([ADR-010](adr/ADR-010-postgresql-direct-backend.md)). |
 | 2 | Data integrity | **PASS** | FKs `RESTRICT`; evidence tied to claim and source of the same investigation; enums/checks; triggers for stale previous state, direct state edits, append-only history (`data-model.test.ts`, G10, G17). Schema is provisional (no `DATA_MODEL.md`). |
 | 3 | Provenance | **PASS** (logic) | Source fields come only from retrieval; quotes must be verbatim; unretrieved URL/quote rejected at the agent and again by the rules layer (G06–G08, failure-injection). Not exercised against live Tavily output. |
 | 4 | Contradiction handling | **PASS** | Contradicting evidence must be cited, blocks SUPPORTED when material, persisted and shown prominently (G05, G12, UI tests, failure-injection "contradiction"). |
@@ -46,7 +46,7 @@ environment), **FAIL**. Nothing below is marked PASS on the basis of intent.
 
 ## Remaining known issues
 
-1. **Momen not connected** (item 1). Decision required.
+1. **Momen not connected** (item 1). Accepted deviation, ADR-010; revisit if a Momen export becomes available.
 2. **No durable workflow checkpoints** (item 9).
 3. **Authoritative specifications missing**; schema enums and golden cases are derived. Re-audit when supplied.
 4. **External integrations unverified** (Anthropic, Tavily, hosted PostgreSQL, Vercel); first deployment must run the smoke test.
