@@ -28,6 +28,8 @@ GOOD = EvidenceRecord(
 )
 LEDGER = build_ledger([{"url": "https://example.org/a", "text": "Overall, scores fell   by four points. Next topic."}])
 
+pytestmark = pytest.mark.hard
+
 
 class TestEvidenceRecordRules:
     def test_passes_a_well_formed_retrieved_record(self) -> None:

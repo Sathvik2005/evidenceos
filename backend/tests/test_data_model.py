@@ -9,6 +9,8 @@ import pytest
 
 from evidenceos.db import PsycopgDatabase
 
+pytestmark = pytest.mark.hard
+
 
 async def one(db: PsycopgDatabase, sql: str, *params: Any) -> Any:
     rows = await db.query(sql, list(params))

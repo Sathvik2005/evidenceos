@@ -40,7 +40,9 @@ class PsycopgDatabase:
             max_size=max_size,
             timeout=10,
             open=False,
-            kwargs={"autocommit": True, "row_factory": dict_row},
+            # prepare_threshold=None: no server-side prepared statements, so it also works behind transaction
+            # poolers (e.g. Supabase / PgBouncer); the cost is negligible for these small statements.
+            kwargs={"autocommit": True, "row_factory": dict_row, "prepare_threshold": None},
         )
 
     async def open(self) -> None:

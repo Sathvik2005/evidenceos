@@ -1,0 +1,8 @@
+{
+  "_note": "Record shapes of the EvidenceOS HTTP API. The Python backend tests and the frontend tests both assert exactly these keys, so a change on one side fails the other.",
+  "investigation": ["id", "question", "status", "createdAt", "updatedAt"],
+  "claim": ["id", "investigationId", "ordinal", "statement", "state", "confidence", "assessmentReason"],
+  "source": ["id", "investigationId", "sourceType", "url", "title", "publisher", "publishedAt"],
+  "evidence": ["id", "investigationId", "claimId", "sourceId", "relationship", "strength", "excerpt", "reasoning"],
+  "change": ["id", "investigationId", "claimId", "previousState", "newState", "reason", "triggeringEvidenceId", "changedAt"]
+}

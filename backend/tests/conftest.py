@@ -65,3 +65,27 @@ async def db(pg_uri: str) -> AsyncIterator[PsycopgDatabase]:
         yield database
     finally:
         await drop_test_database(pg_uri, database, name)
+
+
+# ---- harness reporting --------------------------------------------------------------------------------------
+# When EVIDENCEOS_HARNESS_JSON names a file, every test outcome is written there with its markers so
+# scripts/run-harness.mjs can tell a hard-rule failure from a semantic regression or tolerated variance.
+_results: list[dict[str, object]] = []
+
+
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    if report.when == "call" or (report.when == "setup" and report.outcome != "passed"):
+        markers = [m for m in ("hard", "variance", "failure") if m in getattr(report, "keywords", {})]
+        detail = ""
+        if report.failed and report.longrepr is not None:
+            detail = str(getattr(getattr(report.longrepr, "reprcrash", None), "message", report.longrepr))[:300]
+        _results.append({"id": report.nodeid, "outcome": report.outcome, "markers": markers, "detail": detail, "phase": report.when})
+
+
+def pytest_sessionfinish(session: pytest.Session) -> None:
+    import json
+    import os
+
+    target = os.environ.get("EVIDENCEOS_HARNESS_JSON")
+    if target:
+        Path(target).write_text(json.dumps({"exitstatus": int(session.exitstatus), "results": _results}), encoding="utf-8")
