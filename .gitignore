@@ -11,3 +11,6 @@ coverage/
 # Spec package (local reference only)
 EvidenceOS_COMPLETE_PACKAGE/
 harness-report.json
+
+# Local development database (PGlite)
+.data/

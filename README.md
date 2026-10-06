@@ -107,7 +107,17 @@ npm run harness      # typecheck, lint, unit, contracts, golden, e2e (in-memory 
 npm run build
 ```
 
-To run the full app you need a PostgreSQL database and provider keys; see [`.env.example`](.env.example), then `npm run db:migrate`. Deployment steps and the smoke test are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md). The Vite dev server (`npm run dev --workspace=@evidenceos/frontend`) serves the UI only, not `/api`.
+**Run the seeded demo locally (no keys, no database server):**
+
+```sh
+npm run dev:api                                  # terminal 1: real API over a local file-backed PostgreSQL (PGlite), auto-seeded
+npm run dev --workspace=@evidenceos/frontend     # terminal 2: UI on http://localhost:5173 (proxies /api)
+npm run seed:advance                             # reveal the seeded "new evidence": PARTIALLY SUPPORTED → CONFLICTING
+```
+
+Open the app and choose **View the demo investigation**. New investigations are refused in this mode (research needs model and search keys). Delete `.data/` to start over.
+
+**Run with live research:** needs a PostgreSQL database and provider keys; see [`.env.example`](.env.example), then `npm run db:migrate`. Deployment and the smoke test: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Engineering principles
 
@@ -119,7 +129,7 @@ To run the full app you need a PostgreSQL database and provider keys; see [`.env
 
 ## Status
 
-🧪 **Experimental MVP.** All 182 automated tests and 10 failure-injection cases pass (`npm run harness`). It has **not** yet been deployed, or run against live Anthropic, Tavily or a hosted database. The authoritative spec files other than `agents.md` and the system design are not in this repository, and Momen is deferred ([ADR-010](docs/adr/ADR-010-postgresql-direct-backend.md)). There are no accounts or rate limits yet. Full audit: [`docs/FINAL_AUDIT.md`](docs/FINAL_AUDIT.md).
+🧪 **Experimental MVP.** The automated suite and 10 failure-injection cases pass (`npm run harness`), and the seeded demo runs end to end locally. It has **not** yet been deployed, or run against live Anthropic, Tavily or a hosted database. The authoritative spec files other than `agents.md` and the system design are not in this repository, and Momen is deferred ([ADR-010](docs/adr/ADR-010-postgresql-direct-backend.md)). There are no accounts or rate limits yet. Full audit: [`docs/FINAL_AUDIT.md`](docs/FINAL_AUDIT.md).
 
 ## Roadmap
 

@@ -124,6 +124,11 @@ export async function handleApiRequest(request: Request, deps: ApiDeps): Promise
       }
     }
 
+    if (path === '/demo') {
+      if (request.method !== 'GET') return respond(json(405, { error: { code: 'VALIDATION_FAILED', message: 'Method not allowed.' } }, cookie))
+      return respond(json(200, { data: { investigationId: deps.demo?.investigationId ?? null } }, cookie))
+    }
+
     if (segments[0] !== 'investigations') return respond(json(404, { error: { code: 'NOT_FOUND', message: 'Not found.' } }, cookie))
     const isWrite = request.method === 'POST'
     if (request.method !== 'GET' && !isWrite) return respond(json(405, { error: { code: 'VALIDATION_FAILED', message: 'Method not allowed.' } }, cookie))

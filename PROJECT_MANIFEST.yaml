@@ -5,6 +5,7 @@ project:
   stage: hackathon
   tagline: "Build evidence. Track change. Understand what holds up."
   implementation_prompts_built: "01-22"
+  seeded_demo: "npm run dev:api (local, PGlite, no keys) or npm run seed (DATABASE_URL); see docs/DEMO.md"
   spec_status: "Authoritative specs other than agents.md and system design are not in the repository"
 
 frontend:

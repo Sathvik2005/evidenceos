@@ -10,7 +10,7 @@ environment), **FAIL**. Nothing below is marked PASS on the basis of intent.
 
 ## Evidence for this audit
 
-- `npm run harness`: typecheck PASS, lint PASS, unit 56/56, contracts 28/28, golden 77/77, e2e 21/21, failure injection 10/10. (Final run at the end of this audit: PASS, exit 0.)
+- `npm run harness`: typecheck PASS, lint PASS, unit 56/56, contracts 29/29, golden 77/77, e2e 27/27, failure injection 10/10. (Final run at the end of this audit: PASS, exit 0.)
 - `npm run build` PASS (client bundle ≈ 89 kB gzip). `npm audit --omit=dev`: 0 vulnerabilities.
 - Client bundle searched for `ANTHROPIC`, `TAVILY`, `DATABASE_URL`, `MOMEN_ADMIN`, provider hostnames: 0 matches. Tracked files searched for JWT-shaped tokens: none; the only tracked env file is `.env.example` with empty secret values.
 - Contrast ratios computed from the CSS tokens (WCAG): light and dark text/background pairs 5.9:1 to 14.9:1, all above the 4.5:1 AA threshold for text.
@@ -34,7 +34,7 @@ environment), **FAIL**. Nothing below is marked PASS on the basis of intent.
 | 13 | Golden tests | **PASS** | 20 executable cases (derived from `agents.md` §34 + prompt injection) plus agent goldens; `GOLDEN_SPECS.md` absent, so their completeness against it is unknown. |
 | 14 | Failure injection | **PASS** | 10/10: timeout, malformed output, missing excerpt, fabricated provenance, invalid reference, ignored contradiction, duplicate/concurrent run, partial research failure, persistence failure, credential failure. |
 | 15 | Deployment | **CONDITIONAL** | `vercel.json`, function, migrations runner, env docs, health check, rollback/recovery written; production build passes. **Never deployed**; Anthropic/Tavily/`pg` adapters unverified against the real services. |
-| 16 | Demo path | **CONDITIONAL** | Real, verified source corpus; rehearsal test of PARTIALLY_SUPPORTED → CONFLICTING passes with the real documents and a scripted model. The live-model run and the UI in a real browser were not performed. |
+| 16 | Demo path | **CONDITIONAL** | Seeded demo verified end to end over HTTP against a file-backed database (state survives a server restart; the new-evidence step records PARTIALLY_SUPPORTED → CONFLICTING once). Real, verified source corpus; rehearsal test of PARTIALLY_SUPPORTED → CONFLICTING passes with the real documents and a scripted model. The live-model run and the UI in a real browser were not performed. |
 
 ## Fixes made during the audit
 

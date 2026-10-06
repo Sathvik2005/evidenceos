@@ -112,6 +112,14 @@ describe('HTTP API', () => {
     expect(started.length).toBe(before + 1)
   })
 
+  it('tells the browser which investigation is the public demo, or none', async () => {
+    const configured = await call('/demo')
+    expect(((await configured.json()) as { data: { investigationId: string } }).data.investigationId).toBe(demoId)
+    const none = await handleApiRequest(new Request('https://x.example/api/demo'), { db: pg, startWorkflow: () => undefined })
+    expect(((await none.json()) as { data: { investigationId: null } }).data.investigationId).toBeNull()
+    expect((await call('/demo', { method: 'POST', body: '{}' })).status).toBe(405)
+  })
+
   it('validates input and rejects abuse with structured errors', async () => {
     const empty = await post('/investigations', { question: '   ' })
     expect(empty.status).toBe(400)

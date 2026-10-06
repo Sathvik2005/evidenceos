@@ -3,7 +3,15 @@
 Question: **“Does remote learning improve student outcomes?”**
 Signature moment: **PARTIALLY SUPPORTED → NEW EVIDENCE → CONFLICTING**.
 
-## What is real
+## Seeded mode (no keys needed)
+
+The data can be **seeded** instead of produced by a live model run. The seed writes real records through the same operations and hard rules (sources and verbatim quotes from `demo/corpus.json`; the claims, relationships and reasons were authored and are labelled “Seed fixture (authored, not model output)” in the UI).
+
+- Local: `npm run dev:api`, `npm run dev --workspace=@evidenceos/frontend`, then `npm run seed:advance` for the new-evidence moment. Data persists in `.data/`; delete it to reset.
+- Hosted: `npm run db:migrate`, then `npm run seed` (needs `DATABASE_URL` and `DEMO_OWNER_ID`); set `DEMO_INVESTIGATION_ID` as printed and redeploy; later `npm run seed -- advance`.
+- Be explicit with the audience that this mode replays a recorded research pass; live mode (below) runs the model.
+
+## What is real (live mode)
 
 - Claims, states, confidence, evidence, relationships, history and the transition are produced by the product's workflow and stored in PostgreSQL. Nothing is edited by hand and the UI computes no state.
 - The documents are **recorded retrievals**: three real public sources whose passages were copied verbatim on 2026-10-06 and re-verified in a second fetch. `demo/corpus.json` holds them (this is an excerpt of each page, not the full page):
@@ -14,6 +22,7 @@ Signature moment: **PARTIALLY SUPPORTED → NEW EVIDENCE → CONFLICTING**.
 
 ## Setup (once, before the audience arrives)
 
+0. For seeded mode skip to the script; `seed:advance` replaces `demo:advance`.
 1. Deploy and smoke-test ([`DEPLOYMENT.md`](DEPLOYMENT.md)); `ANTHROPIC_API_KEY` and `DATABASE_URL` must be set where you run the scripts (`.env.local`), and `DEMO_OWNER_ID` set to any stable string.
 2. `npm run demo:seed` — creates the investigation and runs the first pass. Confirm at least one claim is **Partially supported**. Copy the printed id into the deployment's `DEMO_INVESTIGATION_ID` (with `DEMO_OWNER_ID`) and redeploy so the demo is viewable by everyone, read-only.
 3. Open the investigation page and the claim that is partially supported. Keep the tab open.

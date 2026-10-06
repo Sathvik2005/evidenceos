@@ -15,7 +15,10 @@
     "test:golden": "npm run test:golden --workspace=@evidenceos/frontend",
     "test:e2e": "npm run test:e2e --workspace=@evidenceos/frontend",
     "db:migrate": "node scripts/migrate.mjs",
-    "demo:seed": "tsx --env-file=.env.local scripts/demo.ts seed",
-    "demo:advance": "tsx --env-file=.env.local scripts/demo.ts advance"
+    "demo:seed": "tsx --env-file=.env.local scripts/demo.mts seed",
+    "demo:advance": "tsx --env-file=.env.local scripts/demo.mts advance",
+    "dev:api": "tsx scripts/dev-server.mts",
+    "seed:advance": "node scripts/seed-advance.mjs",
+    "seed": "tsx --env-file=.env.local scripts/seed.mts"
   }
 }

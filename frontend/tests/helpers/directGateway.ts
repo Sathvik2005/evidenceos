@@ -23,6 +23,7 @@ export function directGateway(
       if (result.ok) start(result.data.id)
       return result
     },
+    getDemoInvestigation: async () => ({ ok: true, data: { investigationId: null } }),
     getInvestigation: (id) => getInvestigation(db, ownerId, id),
     listClaims: (id) => listClaims(db, ownerId, id, { limit: 100 }),
     listEvidence: (id) => listEvidence(db, ownerId, id, { limit: 100 }),
