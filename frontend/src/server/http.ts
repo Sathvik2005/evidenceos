@@ -31,6 +31,8 @@ const STATUS_BY_CODE: Record<ApiErrorCode, number> = {
 const COOKIE = 'eos_uid'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const MAX_BODY_BYTES = 16 * 1024
+/** A run with no status progress for this long is treated as abandoned and may be resumed. */
+export const STALE_RUN_MINUTES = 10
 const BASE_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' }
 
 function json(status: number, body: unknown, extra: Record<string, string> = {}): Response {
@@ -154,7 +156,7 @@ export async function handleApiRequest(request: Request, deps: ApiDeps): Promise
       if (!isWrite) return respond(json(405, { error: { code: 'VALIDATION_FAILED', message: 'Method not allowed.' } }, cookie))
       if (deps.researchAvailable === false) return respond(json(503, { error: { code: 'INTERNAL_ERROR', message: 'Research is not configured on this server.' } }, cookie))
       // Atomic: only one run can be claimed; a busy investigation is refused, not double-started.
-      const claimed = await claimInvestigationRun(deps.db, ownerId, id, ['READY', 'REVIEW_REQUIRED', 'ERROR'])
+      const claimed = await claimInvestigationRun(deps.db, ownerId, id, ['READY', 'REVIEW_REQUIRED', 'ERROR'], STALE_RUN_MINUTES)
       if (!claimed.ok) return respond(apiError(claimed.error, cookie))
       deps.startWorkflow(id, ownerId)
       return respond(json(202, { data: claimed.data }, cookie))

@@ -99,6 +99,19 @@ describe('HTTP API', () => {
     expect(started.length).toBe(before + 1)
   })
 
+  it('lets a stalled run be resumed, but never one that is still making progress', async () => {
+    const created = await post('/investigations', { question: 'Stalled?' })
+    const cookie = cookieOf(created)
+    const { data } = (await created.json()) as { data: { id: string } }
+    expect((await post(`/investigations/${data.id}/refresh`, {}, cookie)).status).toBe(409) // fresh run: refused
+    await pg.exec('ALTER TABLE investigations DISABLE TRIGGER investigations_update_updated_at') // else it resets updated_at
+    await pg.query("UPDATE investigations SET updated_at = now() - interval '30 minutes' WHERE id = $1", [data.id])
+    await pg.exec('ALTER TABLE investigations ENABLE TRIGGER investigations_update_updated_at')
+    const before = started.length
+    expect((await post(`/investigations/${data.id}/refresh`, {}, cookie)).status).toBe(202) // abandoned run: taken over
+    expect(started.length).toBe(before + 1)
+  })
+
   it('validates input and rejects abuse with structured errors', async () => {
     const empty = await post('/investigations', { question: '   ' })
     expect(empty.status).toBe(400)

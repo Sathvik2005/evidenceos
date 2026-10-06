@@ -8,8 +8,11 @@ import { ProgressSteps } from '../components/ProgressSteps'
 import { EmptyState, ErrorState, LoadingState, PartialNotice } from '../components/StatusViews'
 import { useGateway } from '../gateway/gatewayContext'
 import type { InvestigationGateway } from '../gateway/types'
+import { useNow } from '../hooks/useNow'
 import { useResource } from '../hooks/useResource'
 import { BUSY_STATUSES, STATUS_LABEL } from '../lib/labels'
+
+const STALE_AFTER_MS = 10 * 60 * 1000
 
 export function InvestigationPage() {
   const gateway = useGateway()
@@ -27,6 +30,7 @@ function InvestigationView({ gateway, id }: { gateway: InvestigationGateway; id:
   const evidence = useResource(() => gateway.listEvidence(id))
   const changes = useResource(() => gateway.listEvidenceChanges(id))
   const [actionError, setActionError] = useState<string | null>(null)
+  const now = useNow()
 
   const status = investigation.resource.status === 'ready' ? investigation.resource.data.status : null
   // Re-read the dependent data whenever the persisted status moves, so partial results appear as they exist.
@@ -65,6 +69,11 @@ function InvestigationView({ gateway, id }: { gateway: InvestigationGateway; id:
       {known === 'REVIEW_REQUIRED' ? (
         <PartialNotice title="Some claims need review">
           Part of the research or assessment could not be completed. Claims below show only what was actually established; unassessed claims are marked as such.
+        </PartialNotice>
+      ) : null}
+      {busy && now - Date.parse(current.updatedAt) > STALE_AFTER_MS ? (
+        <PartialNotice title="This run has stopped making progress">
+          No update has been recorded for over {STALE_AFTER_MS / 60000} minutes. Work already saved is kept; resuming reuses it. <Button variant="quiet" onClick={() => void refresh()}>Resume research</Button>
         </PartialNotice>
       ) : null}
       {actionError ? <p className="field__error" role="alert">{actionError}</p> : null}

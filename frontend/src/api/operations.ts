@@ -344,7 +344,7 @@ export async function recordClaimAssessment(
  * This is the single gate that prevents two workflow runs from starting for the same investigation.
  */
 export async function claimInvestigationRun(
-  db: Database, ownerId: string, investigationId: string, allowedFrom: readonly string[],
+  db: Database, ownerId: string, investigationId: string, allowedFrom: readonly string[], staleAfterMinutes?: number,
 ): Promise<ApiResult<Investigation>> {
   const id = checkUuid(investigationId, 'investigationId')
   if (!id.ok) return id
@@ -352,8 +352,13 @@ export async function claimInvestigationRun(
   if (!owned.ok) return owned
   try {
     const { rows } = await db.query<Row>(
-      "UPDATE investigations SET status = 'RESEARCHING' WHERE id = $1 AND status::text = ANY($2::text[]) RETURNING *",
-      [id.data, allowedFrom])
+      // A run that made no progress for `staleAfterMinutes` (e.g. the function was cut off) may be taken over.
+      `UPDATE investigations SET status = 'RESEARCHING'
+       WHERE id = $1 AND (status::text = ANY($2::text[])
+         OR ($3::int IS NOT NULL AND status::text IN ('CREATED', 'RESEARCHING', 'ANALYZING')
+             AND updated_at < now() - make_interval(mins => $3::int)))
+       RETURNING *`,
+      [id.data, allowedFrom, staleAfterMinutes ?? null])
     return rows[0] ? ok(toInvestigation(rows[0])) : fail('CONFLICT', 'A run is already in progress for this investigation.')
   } catch (error) { return mapDatabaseError(error) }
 }
