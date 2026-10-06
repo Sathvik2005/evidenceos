@@ -338,3 +338,22 @@ export async function recordClaimAssessment(
     return rows[0] ? ok(toClaim(rows[0])) : fail('NOT_FOUND', 'Claim not found.')
   } catch (error) { return mapDatabaseError(error) }
 }
+
+/**
+ * Atomically moves an investigation into RESEARCHING, but only from one of the allowed statuses.
+ * This is the single gate that prevents two workflow runs from starting for the same investigation.
+ */
+export async function claimInvestigationRun(
+  db: Database, ownerId: string, investigationId: string, allowedFrom: readonly string[],
+): Promise<ApiResult<Investigation>> {
+  const id = checkUuid(investigationId, 'investigationId')
+  if (!id.ok) return id
+  const owned = await assertOwned(db, ownerId, id.data)
+  if (!owned.ok) return owned
+  try {
+    const { rows } = await db.query<Row>(
+      "UPDATE investigations SET status = 'RESEARCHING' WHERE id = $1 AND status::text = ANY($2::text[]) RETURNING *",
+      [id.data, allowedFrom])
+    return rows[0] ? ok(toInvestigation(rows[0])) : fail('CONFLICT', 'A run is already in progress for this investigation.')
+  } catch (error) { return mapDatabaseError(error) }
+}

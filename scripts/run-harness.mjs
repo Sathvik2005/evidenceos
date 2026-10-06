@@ -22,8 +22,11 @@ const report = {
   modelVariance: [],
 }
 
+const STAGE_TIMEOUT_MS = 5 * 60 * 1000
+
 function run(command) {
-  return spawnSync(command, { cwd: root, shell: true, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+  // A stage that hangs must fail loudly (infrastructure) rather than block the harness forever.
+  return spawnSync(command, { cwd: root, shell: true, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: STAGE_TIMEOUT_MS })
 }
 
 function staticStage(name, command) {

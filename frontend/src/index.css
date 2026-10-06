@@ -118,6 +118,46 @@ main { margin: 0 auto; max-width: 56rem; padding: 3rem 1.5rem 5rem; outline: non
 .claim { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 1rem 1.25rem; }
 .claim__statement { margin: 0 0 0.6rem; font-family: var(--font-display); font-size: 1.15rem; }
 
+.muted { color: var(--muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1.5rem 0; }
+.claim__meta { margin: 0 0 0.6rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+.confidence { font-size: 0.9rem; color: var(--muted); }
+
+.steps { display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; padding: 0; margin: 1rem 0 1.5rem; }
+.steps__item { padding: 0.25rem 0.8rem; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 0.9rem; }
+.steps__item[data-done='true'] { color: var(--ink); }
+.steps__item[aria-current='step'] { border-color: var(--accent); color: var(--ink); font-weight: 700; }
+
+.evidence { margin: 1rem 0; padding: 1.25rem 1.5rem; border: 1px solid var(--line); border-left-width: 6px; border-radius: var(--radius); background: var(--surface); }
+.evidence--contradicts { border-left-color: var(--state-conflicting); border-left-style: dashed; }
+.evidence--supports { border-left-color: var(--state-supported); }
+.evidence--partially_supports { border-left-color: var(--state-partial); }
+.evidence--insufficient { border-left-color: var(--state-insufficient); }
+.evidence__meta { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.6rem; }
+.evidence__excerpt { margin: 0 0 0.75rem; font-family: var(--font-display); font-size: 1.3rem; line-height: 1.5; }
+.evidence__reasoning, .evidence__provenance { margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--muted); }
+.contradictions > h2 { color: var(--state-conflicting); }
+
+.history { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: 1rem; }
+.history__item { border-left: 3px solid var(--line); padding-left: 1rem; }
+.history__item p { margin: 0.25rem 0; }
+.history__claim { font-family: var(--font-display); }
+
+.graph { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.graph svg { min-width: 920px; display: block; }
+.graph__node rect { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; }
+.graph__node text { fill: var(--ink); font-size: 13px; pointer-events: none; }
+.graph__node { cursor: pointer; }
+.graph__node:focus-visible rect, .graph__node.is-selected rect { stroke: var(--focus); stroke-width: 3; }
+.graph__node--claim rect { stroke: var(--accent); }
+.graph__edge { stroke: var(--muted); stroke-width: 1.5; }
+.graph__edge--supports { stroke: var(--state-supported); }
+.graph__edge--partially_supports { stroke: var(--state-partial); }
+.graph__edge--contradicts { stroke: var(--state-conflicting); stroke-width: 2.5; }
+.graph__edge-label { fill: var(--muted); font-size: 11px; }
+.graph__inspector { margin: 1.5rem 0; padding: 1rem 1.25rem; border: 1px solid var(--line); border-radius: var(--radius); }
+.graph__list { padding-left: 1.25rem; }
+
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (prefers-reduced-motion: reduce) {
