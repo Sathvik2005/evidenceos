@@ -18,15 +18,15 @@ prompt is worked; no unstarted prompt is represented as completed.
 | 11 — Complete Investigation Workflow | Provisional | Full workflow with durable persistence, idempotent keys, partial-failure handling and `READY`/`REVIEW_REQUIRED` outcomes (`workflow/handlers.ts`, `run.ts`); e2e tests with a controlled fixture. Committed (b304ade); aligned with the system design in 46f302f. |
 | 12 — Harness & Golden Dataset | Provisional | Evaluation harness and 20-case executable golden dataset (3c8bd49). `npm run harness` passes: unit 56/56, contracts 10/10, golden 67/67, e2e 8/8. |
 | 13 — Frontend Foundation | Provisional | Router, shell, tokens and status primitives (895847c). Production build passes. |
-| 14 — Investigation UI | Provisional | Create-investigation and investigation pages with progress steps, over an HTTP gateway (`a0f5383`). UI journey e2e passes. |
-| 15 — Claim & Evidence UI | Provisional | Claim detail with state/confidence, supporting and contradicting evidence cards, sources and history (`a0f5383`). |
-| 16 — Evidence Graph | Provisional | Graph built from persisted relationships with a list fallback (`a0f5383`). |
-| 17 — Change Detection | Provisional | Evidence-triggered state changes and history in the workflow and UI (`46f302f`, `a0f5383`). |
-| 18 — End-to-End Integration | Provisional | Server app, HTTP API and gateway wiring; production adapters for Anthropic, Tavily and PostgreSQL (`4a01d04`). Adapter contract tests pass; the adapters have not been run against live providers in this workspace. |
-| 19 — Testing & Failure Injection | Provisional | 10 failure-injection cases (`failure-injection.test.ts`), reported by the harness as 10/10 handled safely (`b468b72`). |
-| 20 — Deployment | Conditional | Vercel function (`api/[...path].ts`), `vercel.json`, `db:migrate` script (`4a01d04`). No deployment has been performed or health-checked. |
-| 21 — Demo Hardening | Provisional | Demo corpus from recorded sources (`demo/corpus.json`), `demo:seed` and `demo:advance` scripts, demo corpus e2e test (`b468b72`). The demo has not been run against live providers. |
-| 22 — Final Audit | Not started | — |
+| 14 — Investigation UI | Provisional | New-investigation form (idempotent submit), investigation page driven by the persisted status (no fake progress), partial/error/retry states, stalled-run resume. Component and journey tests pass. |
+| 15 — Claim & Evidence UI | Provisional | Claim detail: claim → state/confidence (separate) → why → supporting → contradictory → uncertainty → sources → history; excerpts are the centerpiece. Tests for supported, partial, conflicting, insufficient. |
+| 16 — Evidence Graph | Provisional | Claim ↔ evidence ↔ source graph built from persisted records, dashed labelled contradictions, inspector, text fallback. Tests for construction and rendering. |
+| 17 — Change Detection | Provisional | Change events only for a persisted previous state, a real difference and new triggering evidence; first assessments stored directly. Golden G10/G11 and e2e cover PARTIALLY_SUPPORTED → CONFLICTING and no-change. |
+| 18 — End-to-End Integration | Provisional | Typed HTTP API, anthropic/tavily/postgres adapters, browser gateway, full journey tests against real persisted state with controlled research fixtures. Live providers unverified. |
+| 19 — Testing & Failure Injection | Provisional | 10 failure-injection cases (all [FAILURE]-tagged) summarized in the harness report; all handled safely. |
+| 20 — Deployment | Conditional | Vercel config and function, migration runner, env docs, health check, rollback/recovery (`docs/DEPLOYMENT.md`). Not deployed or verified against hosted services. |
+| 21 — Demo Hardening | Conditional | Recorded corpus of three real, verified sources; `demo:seed`/`demo:advance`; checklist and recovery (`docs/DEMO.md`); rehearsal test passes. Live-model demo run not performed. |
+| 22 — Final Audit | Conditional | `docs/FINAL_AUDIT.md`: 16 items with evidence; open items are Momen, durable checkpoints, missing specs, unverified integrations. |
 
 ## Credential handling
 

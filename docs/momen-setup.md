@@ -1,5 +1,9 @@
 # Momen setup and local development
 
+> **Status:** the application does not use Momen at runtime. Momen's GraphQL introspection is disabled and no project
+> export is available, so the schema and actions cannot be verified; the API uses PostgreSQL directly (see
+> `ARCHITECTURE.md`, deviation 1). This page covers the endpoint configuration and the anonymous probe only.
+
 Momen is the backend of record (database, APIs/actions, permissions). This repo holds no
 parallel backend or database; it consumes Momen contracts.
 
