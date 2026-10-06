@@ -18,14 +18,14 @@ prompt is worked; no unstarted prompt is represented as completed.
 | 11 — Complete Investigation Workflow | Provisional | Full workflow with durable persistence, idempotent keys, partial-failure handling and `READY`/`REVIEW_REQUIRED` outcomes (`workflow/handlers.ts`, `run.ts`); e2e tests with a controlled fixture. Committed (b304ade); aligned with the system design in 46f302f. |
 | 12 — Harness & Golden Dataset | Provisional | Evaluation harness and 20-case executable golden dataset (3c8bd49). `npm run harness` passes: unit 56/56, contracts 10/10, golden 67/67, e2e 8/8. |
 | 13 — Frontend Foundation | Provisional | Router, shell, tokens and status primitives (895847c). Production build passes. |
-| 14 — Investigation UI | Not started | — |
-| 15 — Claim & Evidence UI | Not started | — |
-| 16 — Evidence Graph | Not started | — |
-| 17 — Change Detection | Not started | — |
-| 18 — End-to-End Integration | Not started | — |
-| 19 — Testing & Failure Injection | Not started | — |
-| 20 — Deployment | Not started | — |
-| 21 — Demo Hardening | Not started | — |
+| 14 — Investigation UI | Provisional | Create-investigation and investigation pages with progress steps, over an HTTP gateway (`a0f5383`). UI journey e2e passes. |
+| 15 — Claim & Evidence UI | Provisional | Claim detail with state/confidence, supporting and contradicting evidence cards, sources and history (`a0f5383`). |
+| 16 — Evidence Graph | Provisional | Graph built from persisted relationships with a list fallback (`a0f5383`). |
+| 17 — Change Detection | Provisional | Evidence-triggered state changes and history in the workflow and UI (`46f302f`, `a0f5383`). |
+| 18 — End-to-End Integration | Provisional | Server app, HTTP API and gateway wiring; production adapters for Anthropic, Tavily and PostgreSQL (`4a01d04`). Adapter contract tests pass; the adapters have not been run against live providers in this workspace. |
+| 19 — Testing & Failure Injection | Provisional | 10 failure-injection cases (`failure-injection.test.ts`), reported by the harness as 10/10 handled safely (`b468b72`). |
+| 20 — Deployment | Conditional | Vercel function (`api/[...path].ts`), `vercel.json`, `db:migrate` script (`4a01d04`). No deployment has been performed or health-checked. |
+| 21 — Demo Hardening | Provisional | Demo corpus from recorded sources (`demo/corpus.json`), `demo:seed` and `demo:advance` scripts, demo corpus e2e test (`b468b72`). The demo has not been run against live providers. |
 | 22 — Final Audit | Not started | — |
 
 ## Credential handling
@@ -52,3 +52,7 @@ Conforming: pipeline order, state ownership (analyst proposes, rules validate, h
 
 
 Update: after commit 46f302f, typecheck, lint, build, all 141 tests and `npm run harness` pass. Items 1-3 above are resolved. Items 4-6 remain open.
+
+Update (2026-10-06, after b468b72): typecheck, lint and production build pass; 19 test files / 181 tests pass in about 21s; `npm run harness` passes (unit 56/56, contracts 27/27, golden 77/77, e2e 21/21, failure injection 10/10). The full suite hung under the default forked pool because each database test boots PGlite; an uncommitted `frontend/vite.config.ts` change (worker-thread pool, longer timeouts) fixes it and should be committed.
+
+New open item (system design §4, §8, CLAUDE.md Momen boundary): Prompts 18/20 connect the server straight to PostgreSQL (`DATABASE_URL`, `server/adapters/postgres.ts`) behind a Vercel function. CLAUDE.md names Momen as the backend of record and forbids a parallel app database. This needs an explicit architecture decision (Momen as the data/API layer, or an approved direct-PostgreSQL deployment) and should be recorded as such. Not silently resolved here.
