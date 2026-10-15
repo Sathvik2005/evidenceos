@@ -235,4 +235,11 @@ async def test_health_reports_a_coarse_reason_and_never_the_error_text(api: Api)
 
     response = await api.call("/health", deps=api.deps(db=Refused()))
     assert response.status == 503 and response.body["reason"] == "auth"
+
+    class Probing(Refused):
+        async def probe(self) -> str:
+            return "dns"
+
+    probed = await api.call("/health", deps=api.deps(db=Probing()))
+    assert probed.body["reason"] == "dns"  # a direct connection attempt gives the real cause, not the pool's timeout
     assert "secret-host" not in response.encoded().decode()

@@ -30,11 +30,29 @@ def translate(sql: str, params: Sequence[Any] | None) -> tuple[str, dict[str, An
     return _PLACEHOLDER.sub(lambda m: f"%(p{m.group(1)})s", sql.replace("%", "%%")), values
 
 
+def classify_db_error(error: BaseException) -> str:
+    """A coarse, safe category for a database failure. The raw message is never returned: it can hold the host."""
+    text = str(error).lower()
+    checks = (
+        ("auth", ("password authentication", "authentication failed", "tenant or user not found", "no pg_hba", "invalid password")),
+        ("dns", ("could not translate host", "name or service not known", "getaddrinfo", "nodename nor servname", "temporary failure in name")),
+        ("network", ("network is unreachable", "no route to host", "connection refused", "cannot assign requested", "connection failed")),
+        ("timeout", ("timeout", "timed out", "couldn't get a connection")),
+        ("ssl", ("ssl", "tls")),
+        ("database", ("does not exist",)),
+    )
+    for name, needles in checks:
+        if any(n in text for n in needles):
+            return name
+    return "unknown" if text else type(error).__name__.lower()
+
+
 class PsycopgDatabase:
     """A small async pool. Autocommit: each statement is its own transaction, so triggers see one statement."""
 
     def __init__(self, conninfo: str, *, max_size: int = 5) -> None:
         self._opened = False
+        self._conninfo = conninfo
         self._pool = AsyncConnectionPool(
             conninfo,
             min_size=1,
@@ -60,6 +78,15 @@ class PsycopgDatabase:
             if not cur.description:
                 return []
             return cast("list[dict[str, Any]]", await cur.fetchall())  # the pool uses the dict_row factory
+
+    async def probe(self) -> str:
+        """One direct connection attempt (5 s) and the coarse category of its failure; 'connected' if it works."""
+        try:
+            conn = await psycopg.AsyncConnection.connect(self._conninfo, connect_timeout=5, autocommit=True)
+        except Exception as error:
+            return classify_db_error(error)
+        await conn.close()
+        return "connected"
 
     async def close(self) -> None:
         await self._pool.close()

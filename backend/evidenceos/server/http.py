@@ -17,7 +17,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from ..contracts import ApiError, ApiResult, fail
-from ..db import Database
+from ..db import Database, classify_db_error
 from ..operations import (
     claim_investigation_run,
     create_investigation,
@@ -143,21 +143,15 @@ def _log_error(deps: ApiDeps, where: str, error: BaseException) -> None:
         deps.log({"evt": "error", "where": where, "type": type(error).__name__, "sqlstate": getattr(error, "sqlstate", None)})
 
 
-def _db_reason(error: BaseException) -> str:
-    """A coarse, safe category for a database failure. The raw message is never returned: it can hold the host."""
-    text = str(error).lower()
-    checks = (
-        ("auth", ("password authentication", "authentication failed", "tenant or user not found", "no pg_hba")),
-        ("dns", ("could not translate host", "name or service not known", "getaddrinfo", "nodename nor servname")),
-        ("network", ("network is unreachable", "no route to host", "connection refused", "cannot assign requested")),
-        ("timeout", ("timeout", "timed out")),
-        ("ssl", ("ssl", "tls")),
-        ("database", ("does not exist",)),
-    )
-    for name, needles in checks:
-        if any(n in text for n in needles):
-            return name
-    return "unknown" if text else type(error).__name__.lower()
+async def _probe_reason(db: Database, error: BaseException) -> str:
+    """Why the database is unreachable: asks the database object for a fresh, direct connection attempt if it can."""
+    probe = getattr(db, "probe", None)
+    if probe is not None:
+        try:
+            return str(await probe())
+        except Exception:
+            pass
+    return classify_db_error(error)
 
 
 def _not_allowed(cookie: Mapping[str, str]) -> ApiResponse:
@@ -200,7 +194,7 @@ async def handle_api_request(
                 return respond(_json(200, {"status": "ok"}))
             except Exception as error:
                 _log_error(deps, "health", error)
-                return respond(_json(503, {"status": "unavailable", "reason": _db_reason(error)}))
+                return respond(_json(503, {"status": "unavailable", "reason": await _probe_reason(deps.db, error)}))
 
         if path == "/demo":
             if method != "GET":
