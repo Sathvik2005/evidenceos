@@ -13,6 +13,8 @@ DEFAULT_LLM_MODEL = "claude-sonnet-5-5"
 class LlmConfig:
     api_key: str
     model: str
+    #: "anthropic" or "openrouter"
+    provider: str = "anthropic"
 
 
 @dataclass(frozen=True)
@@ -55,13 +57,23 @@ def read_server_config(env: Mapping[str, str | None]) -> ServerConfig:
         raise ValueError("DEMO_INVESTIGATION_ID and DEMO_OWNER_ID must be set together.")
 
     anthropic_key = env.get("ANTHROPIC_API_KEY")
+    openrouter_key = env.get("OPENROUTER_API_KEY")
     tavily_key = env.get("TAVILY_API_KEY")
+    llm: LlmConfig | None = None
+    if openrouter_key:
+        # OpenRouter model ids vary ("vendor/model"), so there is deliberately no default to guess.
+        model = env.get("LLM_MODEL")
+        if not model:
+            raise ValueError("LLM_MODEL is required when OPENROUTER_API_KEY is set (an OpenRouter model id).")
+        llm = LlmConfig(openrouter_key, model, "openrouter")
+    elif anthropic_key:
+        llm = LlmConfig(anthropic_key, env.get("LLM_MODEL") or DEFAULT_LLM_MODEL, "anthropic")
     return ServerConfig(
         app_env=app_env,
         database_url=database_url,
         # Providers are optional so reads and the health check work without them; research is then
         # reported as unavailable instead of failing mysteriously.
-        llm=LlmConfig(anthropic_key, env.get("LLM_MODEL") or DEFAULT_LLM_MODEL) if anthropic_key else None,
+        llm=llm,
         research=ResearchConfig("tavily", tavily_key) if tavily_key else None,
         demo=DemoConfig(demo_id, demo_owner) if demo_id and demo_owner else None,
     )

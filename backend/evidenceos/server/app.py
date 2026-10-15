@@ -20,6 +20,7 @@ from ..workflow.handlers import WorkflowDeps
 from ..workflow.run import run_investigation_workflow
 from ..workflow.types import TraceEntry, WorkflowOptions
 from .adapters.anthropic_llm import AnthropicLlm
+from .adapters.openrouter_llm import OpenRouterLlm
 from .adapters.tavily_search import TavilySearch
 from .config import ServerConfig, read_server_config
 from .http import ApiDeps, DemoRef, handle_api_request
@@ -48,7 +49,15 @@ def create_app(
     cfg = config or read_server_config(env if env is not None else os.environ)
     owned_pool = PsycopgDatabase(cfg.database_url) if db is None else None
     database: Database = db if db is not None else owned_pool  # type: ignore[assignment]
-    model = llm if llm is not None else (AnthropicLlm(cfg.llm.api_key, cfg.llm.model) if cfg.llm else None)
+    model: LlmClient | None
+    if llm is not None:
+        model = llm
+    elif cfg.llm and cfg.llm.provider == "openrouter":
+        model = OpenRouterLlm(cfg.llm.api_key, cfg.llm.model)
+    elif cfg.llm:
+        model = AnthropicLlm(cfg.llm.api_key, cfg.llm.model)
+    else:
+        model = None
     retrieval = search if search is not None else (TavilySearch(cfg.research.api_key) if cfg.research else None)
 
     async def run_workflow(investigation_id: str, owner_id: str) -> None:
