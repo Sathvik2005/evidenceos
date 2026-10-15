@@ -226,3 +226,13 @@ async def test_the_app_answers_with_or_without_the_api_prefix(client: httpx.Asyn
     assert (await client.get("/api/health")).json() == {"status": "ok"}
     assert (await client.get("/health")).json() == {"status": "ok"}
     assert (await client.get("/nope")).status_code == 404
+
+
+async def test_health_reports_a_coarse_reason_and_never_the_error_text(api: Api) -> None:
+    class Refused:
+        async def query(self, sql: str, params: Any = None) -> list[dict[str, Any]]:
+            raise RuntimeError('connection to server at "db.secret-host.example" failed: password authentication failed')
+
+    response = await api.call("/health", deps=api.deps(db=Refused()))
+    assert response.status == 503 and response.body["reason"] == "auth"
+    assert "secret-host" not in response.encoded().decode()

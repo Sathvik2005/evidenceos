@@ -143,6 +143,23 @@ def _log_error(deps: ApiDeps, where: str, error: BaseException) -> None:
         deps.log({"evt": "error", "where": where, "type": type(error).__name__, "sqlstate": getattr(error, "sqlstate", None)})
 
 
+def _db_reason(error: BaseException) -> str:
+    """A coarse, safe category for a database failure. The raw message is never returned: it can hold the host."""
+    text = str(error).lower()
+    checks = (
+        ("auth", ("password authentication", "authentication failed", "tenant or user not found", "no pg_hba")),
+        ("dns", ("could not translate host", "name or service not known", "getaddrinfo", "nodename nor servname")),
+        ("network", ("network is unreachable", "no route to host", "connection refused", "cannot assign requested")),
+        ("timeout", ("timeout", "timed out")),
+        ("ssl", ("ssl", "tls")),
+        ("database", ("does not exist",)),
+    )
+    for name, needles in checks:
+        if any(n in text for n in needles):
+            return name
+    return "unknown" if text else type(error).__name__.lower()
+
+
 def _not_allowed(cookie: Mapping[str, str]) -> ApiResponse:
     return _json(405, {"error": {"code": "VALIDATION_FAILED", "message": "Method not allowed."}}, cookie)
 
@@ -183,7 +200,7 @@ async def handle_api_request(
                 return respond(_json(200, {"status": "ok"}))
             except Exception as error:
                 _log_error(deps, "health", error)
-                return respond(_json(503, {"status": "unavailable"}))
+                return respond(_json(503, {"status": "unavailable", "reason": _db_reason(error)}))
 
         if path == "/demo":
             if method != "GET":
