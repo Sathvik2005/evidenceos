@@ -19,6 +19,9 @@ export function AppShell() {
       <main id="main" tabIndex={-1}>
         <Outlet />
       </main>
+      <footer className="site-footer">
+        <p>EvidenceOS shows what the evidence currently supports. It does not decide what is true.</p>
+      </footer>
     </>
   )
 }

@@ -10,7 +10,7 @@ export function ConfidenceNote({ confidence }: { confidence: Claim['confidence']
 
 export function ClaimCard({ claim, investigationId }: { claim: Claim; investigationId: string }) {
   return (
-    <li className="claim">
+    <li className="claim" data-state={claim.state ?? undefined}>
       <p className="claim__statement">{claim.statement}</p>
       <p className="claim__meta">
         <StateBadge state={claim.state} /> <ConfidenceNote confidence={claim.confidence} />
