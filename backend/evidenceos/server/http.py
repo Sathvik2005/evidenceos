@@ -137,6 +137,12 @@ def _page(query: Mapping[str, str]) -> tuple[Any, Any]:
     return (100 if limit is None else number(limit)), (None if offset is None else number(offset))
 
 
+def _log_error(deps: ApiDeps, where: str, error: BaseException) -> None:
+    """Records only the error's type name and where it happened: messages can contain connection strings."""
+    if deps.log:
+        deps.log({"evt": "error", "where": where, "type": type(error).__name__, "sqlstate": getattr(error, "sqlstate", None)})
+
+
 def _not_allowed(cookie: Mapping[str, str]) -> ApiResponse:
     return _json(405, {"error": {"code": "VALIDATION_FAILED", "message": "Method not allowed."}}, cookie)
 
@@ -175,7 +181,8 @@ async def handle_api_request(
             try:
                 await deps.db.query("SELECT 1 AS ok")
                 return respond(_json(200, {"status": "ok"}))
-            except Exception:
+            except Exception as error:
+                _log_error(deps, "health", error)
                 return respond(_json(503, {"status": "unavailable"}))
 
         if path == "/demo":
@@ -259,5 +266,6 @@ async def handle_api_request(
         if result.ok:
             return respond(_json(200, {"data": result.data}, cookie))
         return respond(_api_error(result.error, cookie))  # type: ignore[arg-type]
-    except Exception:
+    except Exception as error:
+        _log_error(deps, "request", error)
         return respond(_json(500, {"error": {"code": "INTERNAL_ERROR", "message": "The operation could not be completed."}}, cookie))
