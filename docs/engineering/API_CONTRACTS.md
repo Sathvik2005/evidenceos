@@ -8,7 +8,7 @@ Browser (gateway) ↔ HTTP API (/api) ↔ Application operations ↔ PostgreSQL
                          LangGraph workflow ↔ Agents ↔ Validation ↔ Persistence
 ```
 
-There is **no Momen API** in this chain: PostgreSQL-direct is the approved backend and Momen is deferred ([ADR-010](../adr/ADR-010-postgresql-direct-backend.md), which supersedes [ADR-005](../adr/ADR-005-momen-backend-platform.md)). The HTTP API is implemented in `backend/evidenceos/server/http.py` (FastAPI) and exposed through the Vercel Function `api/index.py`.
+There is **no Momen API** in this chain: PostgreSQL-direct is the approved backend and Momen is deferred ([ADR-010](../adr/ADR-010-postgresql-direct-backend.md), which supersedes [ADR-005](../adr/ADR-005-momen-backend-platform.md)). The HTTP API is implemented in `backend/evidenceos/server/http.py` (FastAPI) and exposed through the Vercel Function `backend/index.py`.
 
 ## Common behavior
 

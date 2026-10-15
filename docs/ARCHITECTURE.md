@@ -27,7 +27,7 @@ The backend is Python (`backend/evidenceos`, [ADR-011](adr/ADR-011-python-backen
 | `backend/evidenceos/workflow/` | LangGraph state machine, node handlers, bounded retries, failure classification |
 | `backend/evidenceos/server/` | HTTP handling (`http.py`), FastAPI composition (`app.py`), config, adapters (Anthropic, Tavily, recorded demo corpus) |
 | `backend/evidenceos/cli/` | migrate, seed, demo driver and the local dev server |
-| `api/index.py` | Vercel Python Function entry |
+| `backend/index.py` | Vercel Python Function entry |
 | `frontend/src/{pages,components,graph,gateway}` | Browser client and UI; the UI never computes a claim state |
 | `database/migrations/` | PostgreSQL schema (provisional) |
 

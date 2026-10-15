@@ -8,7 +8,7 @@ The frontend is a React/Vite single-page application that needs HTTPS hosting, d
 
 ## Decision
 
-Vercel hosts the built frontend (`frontend/dist`). `vercel.json` rewrites non-API paths to `index.html`, so nested routes survive refresh. The API runs as a Vercel Python Function (`api/index.py`, FastAPI) in the current implementation. Vercel provides HTTPS, preview deployments and Git integration.
+Vercel hosts the built frontend (`frontend/dist`). `vercel.json` rewrites non-API paths to `index.html`, so nested routes survive refresh. The API runs as a Vercel Python Function (`backend/index.py`, FastAPI) in the current implementation. Vercel provides HTTPS, preview deployments and Git integration.
 
 Vercel hosts the frontend; it does not hold Momen administrative credentials. Server-side secrets (`DATABASE_URL`, provider keys) are set in Vercel environment settings without a `VITE_` prefix so they never reach the client bundle.
 

@@ -1,4 +1,4 @@
-"""Vercel Function entry point: every /api/* request is served by the EvidenceOS FastAPI application.
+"""Vercel `backend` service entry point: every /api/* request is served by the EvidenceOS FastAPI application.
 
 Configuration comes from environment variables (see docs/DEPLOYMENT.md). If it is wrong, the function answers
 503 with a generic message instead of crashing, and never echoes a value.
@@ -6,15 +6,10 @@ Configuration comes from environment variables (see docs/DEPLOYMENT.md). If it i
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
-
-from fastapi import FastAPI  # noqa: E402
-from fastapi.responses import JSONResponse  # noqa: E402
-
-from evidenceos.server.app import create_app  # noqa: E402
+from evidenceos.server.app import create_app
 
 try:
     app = create_app()

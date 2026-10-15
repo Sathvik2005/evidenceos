@@ -219,3 +219,10 @@ async def test_the_fastapi_app_serves_the_api_end_to_end_and_runs_the_workflow_a
     other = httpx.AsyncClient(transport=client._transport, base_url=f"http://{HOST}")
     assert (await other.get(f"/api/investigations/{inv}")).status_code == 404  # another browser: no cookie
     await other.aclose()
+
+
+async def test_the_app_answers_with_or_without_the_api_prefix(client: httpx.AsyncClient) -> None:
+    """A path-mounted host may strip /api before forwarding; both forms must reach the same handler."""
+    assert (await client.get("/api/health")).json() == {"status": "ok"}
+    assert (await client.get("/health")).json() == {"status": "ok"}
+    assert (await client.get("/nope")).status_code == 404

@@ -22,7 +22,7 @@ backend:
   platform: none    # the API is served directly by this repository
   language: Python 3.11+ (ADR-011)
   framework: FastAPI
-  api: "HTTP JSON API in backend/evidenceos/server, exposed by the Vercel Python Function api/index.py"
+  api: "HTTP JSON API in backend/evidenceos/server, exposed by the Vercel Python Function backend/index.py"
   momen:
     status: not_connected
     note: "Momen is deferred: PostgreSQL-direct was approved on 2026-10-06 (docs/adr/ADR-010, supersedes ADR-005). No Momen export or actions exist."
@@ -95,7 +95,7 @@ documentation:
 
 deployment:
   frontend: Vercel (configured, not deployed)
-  api: Vercel Python Function api/index.py (configured, not deployed; the Python backend is not yet verified against hosted PostgreSQL or live providers)
+  api: Vercel Python Function backend/index.py (configured, not deployed; the Python backend is not yet verified against hosted PostgreSQL or live providers)
   database: "any PostgreSQL 15+ (hosted instance not provisioned by this repository)"
   health_endpoint: /api/health
 

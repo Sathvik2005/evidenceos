@@ -89,8 +89,10 @@ def create_app(
     app.state.config = cfg
     app.state.deps = deps  # lets a host (e.g. the local dev server) attach the demo once it exists
 
-    @app.api_route("/api", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
-    @app.api_route("/api/{rest:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+    # The handler strips a leading /api itself, so the app works whether the host forwards /api/... or strips the
+    # prefix (as a path-mounted service may). Unknown paths get the handler's structured 404.
+    @app.api_route("/", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+    @app.api_route("/{rest:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
     async def api(request: Request, background: BackgroundTasks, rest: str = "") -> Response:
         result = await handle_api_request(
             method=request.method,

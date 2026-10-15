@@ -85,7 +85,7 @@ The demo question is **“Does remote learning improve student outcomes?”** ov
 ## Project structure
 
 ```text
-api/index.py         Vercel Python Function entry (/api/*)
+backend/index.py     Vercel `backend` service entry (/api/*)
 backend/evidenceos/  The backend (Python)
   agents/            Claim Decomposer, Research, Evidence Analyst, Evaluator
   validation/        Deterministic hard rules

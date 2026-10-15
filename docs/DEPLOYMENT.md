@@ -10,9 +10,13 @@ Use the smoke test below.
 ## What gets deployed
 
 - **Frontend**: `npm run build` → `frontend/dist`, served by Vercel (`vercel.json` also sends non-API paths to `index.html`).
-- **API**: the Vercel Python Function `api/index.py` (FastAPI, Python runtime) handling `/api/*`; dependencies come from the root `requirements.txt` and the package from `backend/evidenceos` (`includeFiles`). Research runs as a FastAPI background task after the response, with `maxDuration` 300 s (check your plan's limit). **Unverified:** whether Vercel keeps the Python function alive until background tasks finish. If it does not, a run is cut off; the investigation then stays `RESEARCHING` until the stale-run takeover (10 minutes) and `POST /api/investigations/:id/refresh` resumes it idempotently. If that proves unreliable, run the same ASGI app (`evidenceos.server.app:create_app`) on a host that keeps processes alive.
+- **API**: the Vercel Python Function `backend/index.py` (FastAPI, Python runtime) handling `/api/*`; dependencies come from the root `requirements.txt` and the package from `backend/evidenceos` (`includeFiles`). Research runs as a FastAPI background task after the response, with `maxDuration` 300 s (check your plan's limit). **Unverified:** whether Vercel keeps the Python function alive until background tasks finish. If it does not, a run is cut off; the investigation then stays `RESEARCHING` until the stale-run takeover (10 minutes) and `POST /api/investigations/:id/refresh` resumes it idempotently. If that proves unreliable, run the same ASGI app (`evidenceos.server.app:create_app`) on a host that keeps processes alive.
 - **Database**: any PostgreSQL 15+ reachable from Vercel (for example a Vercel-marketplace Postgres, Neon or Supabase). Set `DATABASE_URL`.
 - **Momen**: not used by the application today ([`ARCHITECTURE.md`](ARCHITECTURE.md), deviation 1).
+
+## Vercel layout (services)
+
+`vercel.json` defines two services in one Vercel project and one domain: `frontend` (Vite, `frontend/`, served at `/`) and `backend` (FastAPI, `backend/`, entrypoint `backend/index.py`, served at `/api/*`). The browser calls `/api` on its own origin, so no service calls another and no bindings are needed. Dependencies of the backend are in `backend/requirements.txt`. **Unverified on Vercel:** that the Vite service falls back to `index.html` for deep links such as `/investigations/<id>`. The backend accepts requests with or without the `/api` prefix, so it works whichever way Vercel forwards the path.
 
 ## Environment
 
