@@ -243,3 +243,12 @@ async def test_health_reports_a_coarse_reason_and_never_the_error_text(api: Api)
     probed = await api.call("/health", deps=api.deps(db=Probing()))
     assert probed.body["reason"] == "dns"  # a direct connection attempt gives the real cause, not the pool's timeout
     assert "secret-host" not in response.encoded().decode()
+
+
+def test_target_description_never_contains_the_host_user_or_password() -> None:
+    from evidenceos.db import describe_target
+
+    direct = describe_target("postgresql://postgres:s3cret@db.abcdef.supabase.co:5432/postgres")
+    pooled = describe_target("postgresql://postgres.abcdef:s3cret@aws-0-eu.pooler.supabase.com:5432/postgres")
+    assert direct["host_kind"].startswith("supabase-direct") and pooled["host_kind"] == "supabase-pooler"
+    assert "s3cret" not in repr(direct) + repr(pooled) and "abcdef" not in repr(direct) + repr(pooled)

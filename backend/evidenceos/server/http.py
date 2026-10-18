@@ -143,6 +143,11 @@ def _log_error(deps: ApiDeps, where: str, error: BaseException) -> None:
         deps.log({"evt": "error", "where": where, "type": type(error).__name__, "sqlstate": getattr(error, "sqlstate", None)})
 
 
+def _target(db: Database) -> dict[str, str]:
+    describe = getattr(db, "target", None)
+    return dict(describe()) if describe is not None else {}
+
+
 async def _probe_reason(db: Database, error: BaseException) -> str:
     """Why the database is unreachable: asks the database object for a fresh, direct connection attempt if it can."""
     probe = getattr(db, "probe", None)
@@ -194,7 +199,7 @@ async def handle_api_request(
                 return respond(_json(200, {"status": "ok"}))
             except Exception as error:
                 _log_error(deps, "health", error)
-                return respond(_json(503, {"status": "unavailable", "reason": await _probe_reason(deps.db, error)}))
+                return respond(_json(503, {"status": "unavailable", "reason": await _probe_reason(deps.db, error), **_target(deps.db)}))
 
         if path == "/demo":
             if method != "GET":

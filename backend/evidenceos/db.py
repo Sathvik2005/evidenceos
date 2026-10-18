@@ -47,6 +47,40 @@ def classify_db_error(error: BaseException) -> str:
     return "unknown" if text else type(error).__name__.lower()
 
 
+def network_detail(error: BaseException) -> str:
+    """Splits the coarse 'network' category: unreachable (typically IPv6-only), refused (wrong port or host) or other."""
+    text = str(error).lower()
+    if "network is unreachable" in text or "no route to host" in text or "cannot assign requested" in text:
+        return "unreachable"
+    if "connection refused" in text:
+        return "refused"
+    if "timeout" in text or "timed out" in text:
+        return "timeout"
+    return "other"
+
+
+def describe_target(conninfo: str) -> dict[str, str]:
+    """Non-secret facts about where we are connecting: host kind and port. Never the host name, user or password."""
+    from psycopg.conninfo import conninfo_to_dict
+
+    try:
+        info = conninfo_to_dict(conninfo)
+    except Exception:
+        return {"host_kind": "unparseable"}
+    host = str(info.get("host", ""))
+    if host.endswith(".supabase.co") and host.startswith("db."):
+        kind = "supabase-direct (IPv6 only: use the Session pooler string)"
+    elif "pooler.supabase.com" in host:
+        kind = "supabase-pooler"
+    elif host.endswith(".neon.tech"):
+        kind = "neon"
+    elif not host:
+        kind = "missing-host"
+    else:
+        kind = "other"
+    return {"host_kind": kind, "port": str(info.get("port", "5432 (default)")), "sslmode": str(info.get("sslmode", "not set"))}
+
+
 class PsycopgDatabase:
     """A small async pool. Autocommit: each statement is its own transaction, so triggers see one statement."""
 
@@ -84,9 +118,13 @@ class PsycopgDatabase:
         try:
             conn = await psycopg.AsyncConnection.connect(self._conninfo, connect_timeout=5, autocommit=True)
         except Exception as error:
-            return classify_db_error(error)
+            reason = classify_db_error(error)
+            return f"{reason}:{network_detail(error)}" if reason == "network" else reason
         await conn.close()
         return "connected"
+
+    def target(self) -> dict[str, str]:
+        return describe_target(self._conninfo)
 
     async def close(self) -> None:
         await self._pool.close()
