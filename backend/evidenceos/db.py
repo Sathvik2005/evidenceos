@@ -59,6 +59,26 @@ def network_detail(error: BaseException) -> str:
     return "other"
 
 
+def scrubbed_message(error: BaseException, conninfo: str) -> str:
+    """The error text with every connection detail removed (host, user, password, database, addresses, quoted text)."""
+    from psycopg.conninfo import conninfo_to_dict
+
+    text = " ".join(str(error).split())
+    try:
+        info = conninfo_to_dict(conninfo)
+    except Exception:
+        info = {}
+    for key in ("password", "user", "host", "hostaddr", "dbname"):
+        value = str(info.get(key) or "")
+        if len(value) >= 3:
+            text = text.replace(value, f"<{key}>")
+    text = re.sub(r"\"[^\"]*\"|'[^']*'", "<quoted>", text)
+    text = re.sub(r"\d{1,3}(?:\.\d{1,3}){3}", "<ip>", text)
+    text = re.sub(r"\[?[0-9a-fA-F:]{6,}\]?", "<addr>", text)
+    text = re.sub(r"[\w.-]+\.(?:com|co|app|io|net|org|dev)", "<host>", text)
+    return text[:240]
+
+
 def describe_target(conninfo: str) -> dict[str, str]:
     """Non-secret facts about where we are connecting: host kind and port. Never the host name, user or password."""
     from psycopg.conninfo import conninfo_to_dict
@@ -125,6 +145,15 @@ class PsycopgDatabase:
 
     def target(self) -> dict[str, str]:
         return describe_target(self._conninfo)
+
+    async def probe_message(self) -> str:
+        """A scrubbed failure message from one direct connection attempt (empty when it connects)."""
+        try:
+            conn = await psycopg.AsyncConnection.connect(self._conninfo, connect_timeout=5, autocommit=True)
+        except Exception as error:
+            return scrubbed_message(error, self._conninfo)
+        await conn.close()
+        return ""
 
     async def close(self) -> None:
         await self._pool.close()

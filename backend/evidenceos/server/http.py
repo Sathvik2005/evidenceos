@@ -143,9 +143,16 @@ def _log_error(deps: ApiDeps, where: str, error: BaseException) -> None:
         deps.log({"evt": "error", "where": where, "type": type(error).__name__, "sqlstate": getattr(error, "sqlstate", None)})
 
 
-def _target(db: Database) -> dict[str, str]:
+async def _target(db: Database) -> dict[str, str]:
     describe = getattr(db, "target", None)
-    return dict(describe()) if describe is not None else {}
+    out = dict(describe()) if describe is not None else {}
+    message = getattr(db, "probe_message", None)
+    if message is not None:
+        try:
+            out["detail"] = str(await message())
+        except Exception:
+            pass
+    return out
 
 
 async def _probe_reason(db: Database, error: BaseException) -> str:
@@ -199,7 +206,7 @@ async def handle_api_request(
                 return respond(_json(200, {"status": "ok"}))
             except Exception as error:
                 _log_error(deps, "health", error)
-                return respond(_json(503, {"status": "unavailable", "reason": await _probe_reason(deps.db, error), **_target(deps.db)}))
+                return respond(_json(503, {"status": "unavailable", "reason": await _probe_reason(deps.db, error), **await _target(deps.db)}))
 
         if path == "/demo":
             if method != "GET":

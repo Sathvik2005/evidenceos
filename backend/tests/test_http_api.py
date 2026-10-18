@@ -252,3 +252,16 @@ def test_target_description_never_contains_the_host_user_or_password() -> None:
     pooled = describe_target("postgresql://postgres.abcdef:s3cret@aws-0-eu.pooler.supabase.com:5432/postgres")
     assert direct["host_kind"].startswith("supabase-direct") and pooled["host_kind"] == "supabase-pooler"
     assert "s3cret" not in repr(direct) + repr(pooled) and "abcdef" not in repr(direct) + repr(pooled)
+
+
+def test_scrubbed_message_removes_every_connection_detail() -> None:
+    from evidenceos.db import scrubbed_message
+
+    conninfo = "postgresql://postgres.myref:s3cretpw@aws-0-eu.pooler.supabase.com:5432/mydb"
+    error = RuntimeError(
+        'connection failed: connection to server at "aws-0-eu.pooler.supabase.com" (18.1.2.3), port 5432 failed: '
+        "FATAL: password authentication failed for user postgres.myref (s3cretpw) db mydb"
+    )
+    text = scrubbed_message(error, conninfo)
+    for secret in ("s3cretpw", "myref", "supabase", "18.1.2.3", "mydb"):
+        assert secret not in text
