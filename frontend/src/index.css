@@ -282,9 +282,9 @@ form h1 { font-size: clamp(1.75rem, 4vw, 2.4rem); }
 
 /* ---- provenance table ---- */
 .provenance { margin: 1rem 0 0.5rem; overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
-.provenance table { width: 100%; border-collapse: collapse; font-size: 0.92rem; min-width: 900px; }
+.provenance table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 760px; }
 .provenance caption { text-align: left; padding: 0.8rem 1rem 0.2rem; color: var(--muted); font-size: 0.88rem; }
-.provenance th, .provenance td { text-align: left; vertical-align: top; padding: 0.7rem 1rem; border-top: 1px solid var(--line); }
+.provenance th, .provenance td { text-align: left; vertical-align: top; padding: 0.7rem 0.75rem; border-top: 1px solid var(--line); }
 .provenance thead th { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-top: 0; }
 .provenance tbody th { font-weight: 700; white-space: nowrap; }
 .provenance__row--contradicts th, .provenance__row--contradicts td { background: color-mix(in srgb, var(--state-conflicting) 8%, transparent); }
@@ -292,6 +292,6 @@ form h1 { font-size: clamp(1.75rem, 4vw, 2.4rem); }
 .provenance__row--supports th { color: var(--state-supported); border-left: 4px solid var(--state-supported); }
 .provenance__row--partially_supports th { color: var(--state-partial); border-left: 4px solid var(--state-partial); }
 .provenance__row--insufficient th { color: var(--state-insufficient); border-left: 4px solid var(--state-insufficient); }
-.provenance__excerpt { font-family: var(--font-display); min-width: 24rem; width: 46%; line-height: 1.5; }
+.provenance__excerpt { font-family: var(--font-display); min-width: 17rem; width: 40%; line-height: 1.5; }
 .provenance td:nth-child(5) { white-space: nowrap; }
 main h1:focus { outline: none; }
