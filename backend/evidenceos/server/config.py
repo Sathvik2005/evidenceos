@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 APP_ENVS = ("development", "test", "demo", "production")
 DEFAULT_LLM_MODEL = "claude-sonnet-5-5"
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
 
 
 @dataclass(frozen=True)
