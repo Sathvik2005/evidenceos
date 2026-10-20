@@ -34,7 +34,7 @@ def classify_db_error(error: BaseException) -> str:
     """A coarse, safe category for a database failure. The raw message is never returned: it can hold the host."""
     text = str(error).lower()
     checks = (
-        ("auth", ("password authentication", "authentication failed", "tenant or user not found", "no pg_hba", "invalid password")),
+        ("auth", ("password authentication", "authentication failed", "tenant or user not found", "tenant/user", "no pg_hba", "invalid password")),
         ("dns", ("could not translate host", "name or service not known", "getaddrinfo", "nodename nor servname", "temporary failure in name")),
         ("network", ("network is unreachable", "no route to host", "connection refused", "cannot assign requested", "connection failed")),
         ("timeout", ("timeout", "timed out", "couldn't get a connection")),
