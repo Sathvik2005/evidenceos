@@ -3,8 +3,11 @@ import type { EvidenceGraph, GraphEdge, GraphNode } from '../graph/buildGraph'
 import { RELATIONSHIP_LABEL, safeHref } from '../lib/labels'
 import type { EvidenceRelationship } from '../api/contracts'
 
-const COLUMN_X: Record<GraphNode['kind'], number> = { claim: 20, evidence: 330, source: 640 }
-const NODE_W = 260
+const COLUMN_X: Record<GraphNode['kind'], number> = { claim: 20, evidence: 370, source: 720 }
+const NODE_W = 230
+const VIEW_W = 970
+/** Where along an edge its label sits: nearer the target, so labels of edges leaving one node do not collide. */
+const LABEL_AT = 0.6
 const NODE_H = 44
 const ROW = 66
 
@@ -34,7 +37,7 @@ export function EvidenceGraphView({ graph }: { graph: EvidenceGraph }) {
   return (
     <div>
       <div className="graph" role="group" aria-label="Evidence graph. A full text version follows the diagram.">
-        <svg viewBox={`0 0 920 ${height}`} width="100%" role="presentation">
+        <svg viewBox={`0 0 ${VIEW_W} ${height}`} width="100%" role="presentation">
           {graph.edges.map((edge, i) => {
             const a = position.get(edge.from)
             const b = position.get(edge.to)
@@ -47,7 +50,7 @@ export function EvidenceGraphView({ graph }: { graph: EvidenceGraph }) {
               <g key={`${edge.from}>${edge.to}>${i}`}>
                 <line x1={x1} y1={y1} x2={x2} y2={y2} className={`graph__edge graph__edge--${edge.kind.toLowerCase()}`}
                   strokeDasharray={edge.kind === 'CONTRADICTS' ? '6 4' : undefined} />
-                <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 4} textAnchor="middle" className="graph__edge-label">{edgeLabel(edge)}</text>
+                <text x={x1 + (x2 - x1) * LABEL_AT} y={y1 + (y2 - y1) * LABEL_AT - 5} textAnchor="middle" className="graph__edge-label">{edgeLabel(edge)}</text>
               </g>
             )
           })}
