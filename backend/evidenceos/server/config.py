@@ -7,13 +7,14 @@ from dataclasses import dataclass
 
 APP_ENVS = ("development", "test", "demo", "production")
 DEFAULT_LLM_MODEL = "claude-sonnet-5-5"
+DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 
 
 @dataclass(frozen=True)
 class LlmConfig:
     api_key: str
     model: str
-    #: "anthropic" or "openrouter"
+    #: "anthropic", "openrouter" or "gemini"
     provider: str = "anthropic"
 
 
@@ -58,6 +59,7 @@ def read_server_config(env: Mapping[str, str | None]) -> ServerConfig:
 
     anthropic_key = env.get("ANTHROPIC_API_KEY")
     openrouter_key = env.get("OPENROUTER_API_KEY")
+    gemini_key = env.get("GEMINI_API_KEY")
     tavily_key = env.get("TAVILY_API_KEY")
     llm: LlmConfig | None = None
     if openrouter_key:
@@ -66,6 +68,8 @@ def read_server_config(env: Mapping[str, str | None]) -> ServerConfig:
         if not model:
             raise ValueError("LLM_MODEL is required when OPENROUTER_API_KEY is set (an OpenRouter model id).")
         llm = LlmConfig(openrouter_key, model, "openrouter")
+    elif gemini_key:
+        llm = LlmConfig(gemini_key, env.get("LLM_MODEL") or DEFAULT_GEMINI_MODEL, "gemini")
     elif anthropic_key:
         llm = LlmConfig(anthropic_key, env.get("LLM_MODEL") or DEFAULT_LLM_MODEL, "anthropic")
     return ServerConfig(

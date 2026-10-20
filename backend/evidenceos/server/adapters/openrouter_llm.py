@@ -1,6 +1,7 @@
 """OpenRouter model adapter behind the provider-neutral LlmClient. Server-side only: it holds the key.
 
-OpenRouter exposes an OpenAI-compatible chat-completions endpoint, so this uses plain httpx. Errors are mapped to the
+OpenRouter and Google Gemini both expose an OpenAI-compatible chat-completions endpoint, so this uses plain httpx
+with a configurable URL. Errors are mapped to the
 same failure kinds as the Anthropic adapter and provider messages are never surfaced.
 """
 
@@ -15,6 +16,7 @@ from ...workflow.types import WorkflowError
 from .anthropic_llm import parse_model_json
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 
 
 def kind_for_status(status: int) -> str:
@@ -33,12 +35,14 @@ class OpenRouterLlm:
         api_key: str,
         model: str,
         *,
+        url: str = OPENROUTER_URL,
         max_tokens: int = 4096,
         timeout_seconds: float = 60.0,
         client: httpx.AsyncClient | None = None,
     ) -> None:
         self._key = api_key
         self._model = model
+        self._url = url
         self._max_tokens = max_tokens
         self._timeout = timeout_seconds
         self._client = client
@@ -52,10 +56,10 @@ class OpenRouterLlm:
         headers = {"authorization": f"Bearer {self._key}", "content-type": "application/json"}
         try:
             if self._client is not None:
-                response = await self._client.post(OPENROUTER_URL, json=payload, headers=headers, timeout=self._timeout)
+                response = await self._client.post(self._url, json=payload, headers=headers, timeout=self._timeout)
             else:
                 async with httpx.AsyncClient() as client:
-                    response = await client.post(OPENROUTER_URL, json=payload, headers=headers, timeout=self._timeout)
+                    response = await client.post(self._url, json=payload, headers=headers, timeout=self._timeout)
         except httpx.TimeoutException as error:
             raise WorkflowError("TIMEOUT", "The language model request failed.") from error
         except httpx.HTTPError as error:

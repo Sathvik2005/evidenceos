@@ -20,7 +20,7 @@ from ..workflow.handlers import WorkflowDeps
 from ..workflow.run import run_investigation_workflow
 from ..workflow.types import TraceEntry, WorkflowOptions
 from .adapters.anthropic_llm import AnthropicLlm
-from .adapters.openrouter_llm import OpenRouterLlm
+from .adapters.openrouter_llm import GEMINI_URL, OpenRouterLlm
 from .adapters.tavily_search import TavilySearch
 from .config import ServerConfig, read_server_config
 from .http import ApiDeps, DemoRef, handle_api_request
@@ -54,6 +54,8 @@ def create_app(
         model = llm
     elif cfg.llm and cfg.llm.provider == "openrouter":
         model = OpenRouterLlm(cfg.llm.api_key, cfg.llm.model)
+    elif cfg.llm and cfg.llm.provider == "gemini":
+        model = OpenRouterLlm(cfg.llm.api_key, cfg.llm.model, url=GEMINI_URL)
     elif cfg.llm:
         model = AnthropicLlm(cfg.llm.api_key, cfg.llm.model)
     else:

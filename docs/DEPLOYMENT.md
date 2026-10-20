@@ -27,6 +27,7 @@ Set in Vercel → Project → Settings → Environment Variables, per environmen
 | `DATABASE_URL` | yes | Connection string with TLS (`sslmode=require`) |
 | `ANTHROPIC_API_KEY` | for research | Without it, new investigations are refused with a 503 explaining why |
 | `OPENROUTER_API_KEY` | alternative to Anthropic | If set it is used instead of Anthropic, and `LLM_MODEL` must then be an OpenRouter model id (for example `vendor/model`); there is no default |
+| `GEMINI_API_KEY` | alternative to Anthropic | Google Gemini through its OpenAI-compatible endpoint. Used when `OPENROUTER_API_KEY` is not set and wins over Anthropic; `LLM_MODEL` defaults to `gemini-2.5-flash` |
 | `LLM_MODEL` | no (yes with OpenRouter) | Defaults to `claude-sonnet-5-5` for Anthropic |
 | `TAVILY_API_KEY` | for research | Retrieval provider |
 | `APPLICATION_ENV` | yes in production | `production` also marks cookies `Secure` |

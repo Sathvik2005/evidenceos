@@ -62,3 +62,26 @@ def test_config_selects_openrouter_and_requires_a_model_id() -> None:
     assert (cfg.llm.provider, cfg.llm.model) == ("openrouter", "vendor/model")
     anthropic_only = read_server_config({"DATABASE_URL": "x", "ANTHROPIC_API_KEY": "a"})
     assert anthropic_only.llm is not None and anthropic_only.llm.provider == "anthropic"
+
+
+def test_config_selects_gemini_with_a_default_model_and_openrouter_still_wins() -> None:
+    cfg = read_server_config({"DATABASE_URL": "x", "GEMINI_API_KEY": "g", "ANTHROPIC_API_KEY": "a"})
+    assert cfg.llm is not None and (cfg.llm.provider, cfg.llm.model) == ("gemini", "gemini-2.5-flash")
+    custom = read_server_config({"DATABASE_URL": "x", "GEMINI_API_KEY": "g", "LLM_MODEL": "gemini-2.5-pro"})
+    assert custom.llm is not None and custom.llm.model == "gemini-2.5-pro"
+    both = read_server_config({"DATABASE_URL": "x", "GEMINI_API_KEY": "g", "OPENROUTER_API_KEY": "o", "LLM_MODEL": "v/m"})
+    assert both.llm is not None and both.llm.provider == "openrouter"
+
+
+async def test_gemini_url_is_used_and_the_key_stays_in_the_header() -> None:
+    from evidenceos.server.adapters.openrouter_llm import GEMINI_URL
+
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={"choices": [{"message": {"content": '{"a": 1}'}}]})
+
+    llm = OpenRouterLlm("SECRET", "gemini-2.5-flash", url=GEMINI_URL, client=client_with(httpx.MockTransport(handler)))
+    assert await llm.generate(REQUEST) == {"a": 1}
+    assert str(seen[0].url) == GEMINI_URL and "SECRET" not in str(seen[0].url) + seen[0].content.decode()
