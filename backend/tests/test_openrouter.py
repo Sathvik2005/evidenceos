@@ -36,7 +36,7 @@ async def test_sends_the_key_only_in_the_authorization_header_and_parses_a_fence
     assert seen[0].headers["authorization"] == "Bearer SECRET"
 
 
-@pytest.mark.parametrize(("status", "kind"), [(401, "AUTHENTICATION"), (429, "RATE_LIMIT"), (502, "PROVIDER")])
+@pytest.mark.parametrize(("status", "kind"), [(401, "AUTHENTICATION"), (402, "AUTHORIZATION"), (429, "RATE_LIMIT"), (502, "PROVIDER")])
 async def test_maps_http_failures_without_surfacing_provider_text(status: int, kind: str) -> None:
     transport = httpx.MockTransport(lambda r: httpx.Response(status, json={"error": "leaky detail"}))
     with pytest.raises(WorkflowError) as error:

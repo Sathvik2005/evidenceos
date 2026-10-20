@@ -22,6 +22,8 @@ GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/compl
 def kind_for_status(status: int) -> str:
     if status in (401, 403):
         return "AUTHENTICATION"
+    if status == 402:
+        return "AUTHORIZATION"  # the provider refuses to serve this account (no credit left); retrying cannot help
     if status == 429:
         return "RATE_LIMIT"
     if status == 408:

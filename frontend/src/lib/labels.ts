@@ -50,7 +50,7 @@ export function safeHref(url: string): string | null {
 export const FAILURE_MESSAGE: Record<string, string> = {
   RATE_LIMIT: 'The language model provider is rate-limiting this server or its quota is used up. Retrying later may work.',
   AUTHENTICATION: 'The server could not authenticate with the language model or search provider. This needs an operator to fix the configured key.',
-  AUTHORIZATION: 'The server is not permitted to perform this step. This needs an operator to fix the configuration.',
+  AUTHORIZATION: 'The language model provider refused the request, most likely because the account has no credit left. This needs an operator to fix the account.',
   TIMEOUT: 'A provider took too long to respond. Retrying may work.',
   NETWORK: 'The server could not reach a provider. Retrying may work.',
   PROVIDER: 'A provider returned an error. Retrying may work.',
