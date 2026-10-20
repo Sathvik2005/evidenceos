@@ -27,6 +27,7 @@ from ..operations import (
     record_claim_assessment,
     record_state_change,
     set_investigation_status,
+    set_investigation_step,
 )
 from ..text import normalize_url
 from ..validation.rules import (
@@ -418,7 +419,7 @@ def create_workflow_handlers(deps: WorkflowDeps) -> NodeHandlers:
         )
         return {"summary": summary}
 
-    return {
+    handlers: NodeHandlers = {
         "load": load,
         "decompose": decompose,
         "validateClaims": validate_claims,
@@ -433,3 +434,14 @@ def create_workflow_handlers(deps: WorkflowDeps) -> NodeHandlers:
         "detectChange": detect_change,
         "summarize": summarize,
     }
+
+    def tracked(node: str, handler: Any) -> Any:
+        async def run(state: Mapping[str, Any]) -> dict[str, Any]:
+            # Progress display only: a failure to record the step must never fail or alter the run.
+            await set_investigation_step(db, state["owner_id"], state["investigation_id"], node)
+            result: dict[str, Any] = await handler(state)
+            return result
+
+        return run
+
+    return {node: tracked(node, handler) for node, handler in handlers.items()}

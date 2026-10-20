@@ -36,8 +36,9 @@ export function EvidenceGraphView({ graph }: { graph: EvidenceGraph }) {
 
   return (
     <div>
-      <div className="graph" role="group" aria-label="Evidence graph. A full text version follows the diagram.">
-        <svg viewBox={`0 0 ${VIEW_W} ${height}`} width="100%" role="presentation">
+      <p id="graph-hint" className="muted">Use Tab to move between nodes and Enter or Space to inspect one. A full text version of every relationship follows the diagram.</p>
+      <div className="graph" role="group" aria-label="Evidence graph" aria-describedby="graph-hint">
+        <svg viewBox={`0 0 ${VIEW_W} ${height}`} width="100%">
           {graph.edges.map((edge, i) => {
             const a = position.get(edge.from)
             const b = position.get(edge.to)

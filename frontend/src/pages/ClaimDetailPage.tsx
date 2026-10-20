@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import type { Claim, Evidence, EvidenceChange, Source } from '../api/contracts'
 import { ConfidenceNote } from '../components/ClaimCard'
 import { EvidenceCard } from '../components/EvidenceCard'
+import { ProvenanceTable } from '../components/ProvenanceTable'
 import { HistoryList } from '../components/HistoryList'
 import { StateBadge } from '../components/StateBadge'
 import { ErrorState, LoadingState, PartialNotice } from '../components/StatusViews'
@@ -68,6 +69,11 @@ function ClaimDetail({ gateway, investigationId, claimId }: { gateway: Investiga
       <section aria-labelledby="why">
         <h2 id="why">Why</h2>
         {claim.assessmentReason ? <p>{claim.assessmentReason}</p> : <p className="muted">No assessment has been recorded for this claim yet.</p>}
+      </section>
+
+      <section aria-labelledby="provenance">
+        <h2 id="provenance">Evidence at a glance</h2>
+        {evidence.length === 0 ? <p className="muted">No evidence is recorded for this claim.</p> : <ProvenanceTable evidence={evidence} sources={sources} />}
       </section>
 
       <section aria-labelledby="supporting">

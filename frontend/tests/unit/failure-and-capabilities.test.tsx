@@ -14,7 +14,7 @@ const renderAt = (path: string, backend: FakeBackend) =>
   render(<GatewayProvider gateway={backend}><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></GatewayProvider>)
 
 const failedRun = (failureKind: string | null) =>
-  new FakeBackend({ investigations: [{ id: INV, question: QUESTION, status: 'ERROR', createdAt: AT, updatedAt: AT, failureKind }] })
+  new FakeBackend({ investigations: [{ id: INV, question: QUESTION, status: 'ERROR', createdAt: AT, updatedAt: AT, failureKind, workflowNode: null }] })
 
 describe('why a run stopped', () => {
   it('tells the user the recorded reason instead of a bare error', async () => {

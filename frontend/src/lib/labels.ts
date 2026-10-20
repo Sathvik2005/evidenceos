@@ -62,3 +62,27 @@ export const FAILURE_MESSAGE: Record<string, string> = {
 
 export const failureMessage = (kind: string | null): string =>
   (kind !== null ? FAILURE_MESSAGE[kind] : undefined) ?? 'The reason was not recorded.'
+
+/** The server's workflow steps in the order they run, with plain-language labels. */
+export const WORKFLOW_STEPS: readonly { readonly node: string; readonly label: string }[] = [
+  { node: 'load', label: 'Loading the investigation' },
+  { node: 'decompose', label: 'Breaking the question into claims' },
+  { node: 'validateClaims', label: 'Checking the claims' },
+  { node: 'persistClaims', label: 'Saving the claims' },
+  { node: 'research', label: 'Researching sources' },
+  { node: 'validateEvidence', label: 'Checking quotes and sources' },
+  { node: 'analyze', label: 'Weighing the evidence' },
+  { node: 'validateAssessment', label: 'Checking the assessment' },
+  { node: 'evaluate', label: 'Auditing the assessment' },
+  { node: 'decide', label: 'Deciding what to keep' },
+  { node: 'persistState', label: 'Saving claim states' },
+  { node: 'detectChange', label: 'Looking for changes' },
+  { node: 'summarize', label: 'Summarizing' },
+]
+
+/** "Step 5 of 13: Researching sources", or null when the step is unknown. Never invented from the status. */
+export function describeStep(node: string | null): { readonly position: number; readonly total: number; readonly label: string } | null {
+  const index = node === null ? -1 : WORKFLOW_STEPS.findIndex((s) => s.node === node)
+  const step = WORKFLOW_STEPS[index]
+  return step ? { position: index + 1, total: WORKFLOW_STEPS.length, label: step.label } : null
+}

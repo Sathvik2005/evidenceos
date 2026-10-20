@@ -63,7 +63,7 @@ function InvestigationView({ gateway, id }: { gateway: InvestigationGateway; id:
     <article>
       <p className="eyebrow">Investigation · {STATUS_LABEL[known] ?? current.status}</p>
       <h1>{current.question}</h1>
-      <ProgressSteps status={known} />
+      <ProgressSteps status={known} node={current.workflowNode} />
 
       {known === 'ERROR' ? (
         <ErrorState title="The investigation stopped with an error" message={`${failureMessage(current.failureKind)} Work completed before the error is kept. You can retry the research.`} onRetry={() => void refresh()} />

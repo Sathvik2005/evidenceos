@@ -46,6 +46,8 @@ export interface Investigation {
   readonly updatedAt: string
   /** Coarse, classified reason for an ERROR status; null otherwise. Never provider text. */
   readonly failureKind: string | null
+  /** The workflow step the run is in, or stopped at; null before the first step. Progress display only. */
+  readonly workflowNode: string | null
 }
 
 export interface Claim {

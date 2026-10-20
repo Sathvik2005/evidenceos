@@ -1,9 +1,13 @@
+import { useRef } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { Button } from '../components/Button'
+import { useRouteFocus } from '../hooks/useRouteFocus'
 import { useTheme } from '../theme/useTheme'
 
 export function AppShell() {
   const { theme, toggle } = useTheme()
+  const mainRef = useRef<HTMLElement>(null)
+  useRouteFocus(mainRef)
   return (
     <>
       <a className="skip-link" href="#main">Skip to content</a>
@@ -16,7 +20,7 @@ export function AppShell() {
           </Button>
         </nav>
       </header>
-      <main id="main" tabIndex={-1}>
+      <main id="main" tabIndex={-1} ref={mainRef}>
         <Outlet />
       </main>
       <footer className="site-footer">

@@ -59,6 +59,7 @@ def to_investigation(r: Row) -> Record:
     return {
         "id": str(r["id"]), "question": r["question"], "status": r["status"],
         "createdAt": iso(r["created_at"]), "updatedAt": iso(r["updated_at"]), "failureKind": r.get("failure_kind"),
+        "workflowNode": r.get("workflow_node"),
     }
 
 
@@ -416,6 +417,18 @@ async def set_investigation_status(
     except Exception as error:
         return map_database_error(error)
     return ok(to_investigation(rows[0])) if rows else fail(NOT_FOUND, "Investigation not found.")
+
+
+async def set_investigation_step(db: Database, owner_id: str, investigation_id: str, node: str) -> ApiResult[None]:
+    """Records which workflow node is running, for the progress display. The database only accepts known node names."""
+    inv = check_uuid(investigation_id, "investigationId")
+    if not inv.ok:
+        return inv
+    try:
+        await db.query("UPDATE investigations SET workflow_node = $3 WHERE id = $1 AND owner_id = $2", [inv.data, owner_id, node])
+    except Exception as error:
+        return map_database_error(error)
+    return ok(None)
 
 
 async def record_claim_assessment(

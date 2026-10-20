@@ -9,6 +9,7 @@
   --muted: #5c5448;
   --line: #ddd2bc;
   --line-strong: #c9bb9f;
+  --control-border: #857860; /* >= 3:1 on surface and background (WCAG 1.4.11) */
   --accent: #2f4a6b;
   --accent-hover: #243a55;
   --accent-soft: #e4eaf2;
@@ -35,6 +36,7 @@
   --muted: #a9a699;
   --line: #27314a;
   --line-strong: #37446a;
+  --control-border: #66759c;
   --accent: #9db8e0;
   --accent-hover: #b8cdea;
   --accent-soft: #1c2740;
@@ -146,7 +148,7 @@ form h1 { font-size: clamp(1.75rem, 4vw, 2.4rem); }
 .field { display: grid; gap: 0.4rem; margin-bottom: 1.25rem; }
 .field label { font-weight: 600; }
 .field textarea, .field input {
-  font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line-strong);
+  font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--control-border);
   border-radius: var(--radius-sm); padding: 0.85rem 1rem; resize: vertical; width: 100%;
   transition: border-color var(--motion) ease, box-shadow var(--motion) ease;
 }
@@ -238,7 +240,7 @@ form h1 { font-size: clamp(1.75rem, 4vw, 2.4rem); }
 /* ---- graph ---- */
 .graph { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
 .graph svg { min-width: 640px; display: block; }
-.graph__node rect { fill: var(--bg); stroke: var(--line-strong); stroke-width: 1.5; }
+.graph__node rect { fill: var(--bg); stroke: var(--control-border); stroke-width: 1.5; }
 .graph__node text { fill: var(--ink); font-size: 13px; pointer-events: none; }
 .graph__node { cursor: pointer; }
 .graph__node:focus-visible rect, .graph__node.is-selected rect { stroke: var(--focus); stroke-width: 3; }
@@ -275,3 +277,20 @@ form h1 { font-size: clamp(1.75rem, 4vw, 2.4rem); }
 .history__trigger { margin-top: 0.75rem; }
 .history__trigger-label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 0.4rem; }
 .history__trigger .evidence { margin: 0; }
+
+.steps__now { min-height: 1.4em; margin: -0.75rem 0 1.25rem; font-size: 0.9rem; color: var(--muted); }
+
+/* ---- provenance table ---- */
+.provenance { margin: 1rem 0 0.5rem; overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.provenance table { width: 100%; border-collapse: collapse; font-size: 0.92rem; min-width: 640px; }
+.provenance caption { text-align: left; padding: 0.8rem 1rem 0.2rem; color: var(--muted); font-size: 0.88rem; }
+.provenance th, .provenance td { text-align: left; vertical-align: top; padding: 0.7rem 1rem; border-top: 1px solid var(--line); }
+.provenance thead th { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-top: 0; }
+.provenance tbody th { font-weight: 700; white-space: nowrap; }
+.provenance__row--contradicts th, .provenance__row--contradicts td { background: color-mix(in srgb, var(--state-conflicting) 8%, transparent); }
+.provenance__row--contradicts th { color: var(--state-conflicting); border-left: 4px dashed var(--state-conflicting); }
+.provenance__row--supports th { color: var(--state-supported); border-left: 4px solid var(--state-supported); }
+.provenance__row--partially_supports th { color: var(--state-partial); border-left: 4px solid var(--state-partial); }
+.provenance__row--insufficient th { color: var(--state-insufficient); border-left: 4px solid var(--state-insufficient); }
+.provenance__excerpt { font-family: var(--font-display); }
+main h1:focus { outline: none; }

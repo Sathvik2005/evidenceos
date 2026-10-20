@@ -45,7 +45,7 @@ export class FakeBackend implements InvestigationGateway {
       return { ok: false, error: { code: 'VALIDATION_FAILED', message: 'question must be a non-empty string.', field: 'question' } }
     }
     const now = '2026-01-01T00:00:00.000Z'
-    const created: Investigation = { id: `inv-${this.nextId++}`, question: input.question, status: 'CREATED', createdAt: now, updatedAt: now, failureKind: null }
+    const created: Investigation = { id: `inv-${this.nextId++}`, question: input.question, status: 'CREATED', createdAt: now, updatedAt: now, failureKind: null, workflowNode: null }
     this.records.investigations = [...this.records.investigations, created]
     this.runs.push(created.id)
     return ok(created)
@@ -122,7 +122,7 @@ export const CLAIMS = {
   wellbeing: 'Remote learning changes student wellbeing',
 }
 
-const investigation = (status: string): Investigation => ({ id: INV, question: QUESTION, status, createdAt: AT, updatedAt: AT, failureKind: null })
+const investigation = (status: string): Investigation => ({ id: INV, question: QUESTION, status, createdAt: AT, updatedAt: AT, failureKind: null, workflowNode: null })
 
 /** Claim 1 CONFLICTING after new evidence, claim 2 SUPPORTED, claim 3 INSUFFICIENT; one recorded change. */
 export function conflictingScenario(): Records {

@@ -7,7 +7,7 @@ from typing import Any
 from evidenceos.agents.llm import LlmRequest
 from evidenceos.agents.research_agent import SearchOutcome
 from evidenceos.db import PsycopgDatabase
-from evidenceos.operations import create_investigation
+from evidenceos.operations import create_investigation, set_investigation_step
 from evidenceos.workflow.handlers import WorkflowDeps
 from evidenceos.workflow.run import run_investigation_workflow
 from evidenceos.workflow.types import WorkflowError
@@ -48,6 +48,8 @@ class TestFullWorkflow:
         # First assessments are stored directly: they are not state changes, so there is no history yet.
         assert await scalar(db, "SELECT count(*) FROM evidence_changes WHERE investigation_id = $1", inv) == 0
         assert await scalar(db, "SELECT status FROM investigations WHERE id = $1", inv) == "READY"
+        # The progress display saw the run reach its last step.
+        assert await scalar(db, "SELECT workflow_node FROM investigations WHERE id = $1", inv) == "summarize"
         assert "1 CONFLICTING" in result["summary"]
 
     async def test_is_idempotent_a_rerun_creates_no_duplicates(self, db: PsycopgDatabase) -> None:
@@ -168,3 +170,15 @@ class TestFailureHandling:
         result = await run(db, inv, "intruder", FixtureLlm(), Corpus())
         assert result["status"] == "FAILED"
         assert result["failures"][0].node == "load" and result["failures"][0].kind == "AUTHORIZATION"
+
+
+class TestStepRecording:
+    async def test_records_known_steps_only_and_only_for_the_owner(self, db: PsycopgDatabase) -> None:
+        inv = await new_investigation(db, "owner-steps")
+        assert await scalar(db, "SELECT workflow_node FROM investigations WHERE id = $1", inv) is None
+        assert (await set_investigation_step(db, "owner-steps", inv, "research")).ok
+        assert await scalar(db, "SELECT workflow_node FROM investigations WHERE id = $1", inv) == "research"
+        # The database refuses a name that is not a workflow node, and another owner changes nothing.
+        assert not (await set_investigation_step(db, "owner-steps", inv, "not-a-node")).ok
+        await set_investigation_step(db, "someone-else", inv, "analyze")
+        assert await scalar(db, "SELECT workflow_node FROM investigations WHERE id = $1", inv) == "research"
