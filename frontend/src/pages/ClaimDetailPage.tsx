@@ -105,7 +105,7 @@ function ClaimDetail({ gateway, investigationId, claimId }: { gateway: Investiga
 
       <section aria-labelledby="history">
         <h2 id="history">History</h2>
-        <HistoryList changes={changes} evidence={evidence} />
+        <HistoryList changes={changes} evidence={evidence} sources={sources} investigationId={claim.investigationId} />
       </section>
     </article>
   )

@@ -28,6 +28,7 @@ function InvestigationView({ gateway, id }: { gateway: InvestigationGateway; id:
   const busy = investigation.resource.status === 'ready' && BUSY_STATUSES.includes(investigation.resource.data.status)
   const claims = useResource(() => gateway.listClaims(id), { shouldPoll: () => busy })
   const evidence = useResource(() => gateway.listEvidence(id))
+  const sources = useResource(() => gateway.listSources(id))
   const changes = useResource(() => gateway.listEvidenceChanges(id))
   const [actionError, setActionError] = useState<string | null>(null)
   const now = useNow()
@@ -38,6 +39,7 @@ function InvestigationView({ gateway, id }: { gateway: InvestigationGateway; id:
     if (status) {
       claims.reload()
       evidence.reload()
+      sources.reload()
       changes.reload()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,6 +106,8 @@ function InvestigationView({ gateway, id }: { gateway: InvestigationGateway; id:
         <HistoryList
           changes={changes.resource.data}
           evidence={evidence.resource.data}
+          investigationId={id}
+          {...(sources.resource.status === 'ready' ? { sources: sources.resource.data } : {})}
           {...(claims.resource.status === 'ready' ? { claims: claims.resource.data } : {})}
         />
       ) : <LoadingState label="Loading history" />}

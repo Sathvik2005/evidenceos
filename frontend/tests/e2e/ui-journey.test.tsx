@@ -115,7 +115,7 @@ describe('change history and graph', () => {
     const backend = new FakeBackend(conflictingScenario())
     renderApp(`/investigations/${INV}`, backend)
     expect(await screen.findByRole('heading', { name: 'State history' })).toBeTruthy()
-    await waitFor(() => expect(screen.getByText(/Triggered by new evidence/)).toBeTruthy())
+    await waitFor(() => expect(screen.getByText(/The new evidence that triggered this change/)).toBeTruthy())
     expect(screen.getByText(/Average math scores declined/)).toBeTruthy()
     cleanup()
 
@@ -163,6 +163,6 @@ describe('seeded demo data', () => {
     const contradictory = screen.getByRole('region', { name: 'Contradictory evidence' })
     await waitFor(() => expect(within(contradictory).getAllByRole('figure')).toHaveLength(2))
     expect(within(screen.getByRole('region', { name: 'Supporting evidence' })).getAllByRole('figure')).toHaveLength(1)
-    expect(within(screen.getByRole('region', { name: 'History' })).getByText(/Triggered by new evidence/)).toBeTruthy()
+    expect(within(screen.getByRole('region', { name: 'History' })).getByText(/The new evidence that triggered this change/)).toBeTruthy()
   })
 })

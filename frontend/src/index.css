@@ -269,3 +269,9 @@ form h1 { font-size: clamp(1.75rem, 4vw, 2.4rem); }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition: none !important; }
 }
+
+.history__claim a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.history__claim a:hover { color: var(--accent); }
+.history__trigger { margin-top: 0.75rem; }
+.history__trigger-label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 0.4rem; }
+.history__trigger .evidence { margin: 0; }
