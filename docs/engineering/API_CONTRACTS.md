@@ -46,6 +46,10 @@ Enums: relationship `SUPPORTS`, `PARTIALLY_SUPPORTS`, `CONTRADICTS`, `INSUFFICIE
 
 A run starts from `POST /api/investigations` (new) or `…/refresh` (re-run) after an atomic status claim. The LangGraph nodes are: load, decompose, validateClaims, persistClaims, research, validateEvidence, analyze, validateAssessment, evaluate, decide, persistState, detectChange, summarize. Inputs are the investigation and owner ids; the question is loaded from the database. Retries: at most 2, transient failures only. Outcome: investigation status `READY` (all claims resolved), `REVIEW_REQUIRED` (some claim failed or is unresolved) or `ERROR` (authentication/authorization failure or crash). Re-running is idempotent via deterministic idempotency keys. There is no endpoint that exposes workflow internals.
 
+## Capabilities
+
+`GET /api/capabilities`: `200 {"data":{"researchAvailable":boolean}}`. No data, no secrets. The UI uses it to disable the new-investigation form when the server cannot run research (the `POST` would return `503`). `failureKind` on an investigation is the classified reason for `ERROR` (from `database/migrations/003_investigation_failure_kind.sql`), `null` otherwise.
+
 ## Health
 
 `GET /api/health`: `200 {"status":"ok"}` after `SELECT 1`, else `503 {"status":"unavailable"}`. No authorization, no data.

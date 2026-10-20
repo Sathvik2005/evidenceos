@@ -45,3 +45,20 @@ export function safeHref(url: string): string | null {
     return null
   }
 }
+
+/** Plain-language reason for a stopped run, keyed by the server's classified failure kind. */
+export const FAILURE_MESSAGE: Record<string, string> = {
+  RATE_LIMIT: 'The language model provider is rate-limiting this server or its quota is used up. Retrying later may work.',
+  AUTHENTICATION: 'The server could not authenticate with the language model or search provider. This needs an operator to fix the configured key.',
+  AUTHORIZATION: 'The server is not permitted to perform this step. This needs an operator to fix the configuration.',
+  TIMEOUT: 'A provider took too long to respond. Retrying may work.',
+  NETWORK: 'The server could not reach a provider. Retrying may work.',
+  PROVIDER: 'A provider returned an error. Retrying may work.',
+  MALFORMED_OUTPUT: 'The language model returned output that did not pass validation, so it was not used.',
+  VALIDATION: 'A result did not pass the evidence validation rules, so it was not stored.',
+  PERSISTENCE: 'The server could not save its progress to the database.',
+  WORKFLOW: 'The run stopped unexpectedly.',
+}
+
+export const failureMessage = (kind: string | null): string =>
+  (kind !== null ? FAILURE_MESSAGE[kind] : undefined) ?? 'The reason was not recorded.'

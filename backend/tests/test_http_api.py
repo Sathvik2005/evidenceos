@@ -265,3 +265,26 @@ def test_scrubbed_message_removes_every_connection_detail() -> None:
     text = scrubbed_message(error, conninfo)
     for secret in ("s3cretpw", "myref", "supabase", "18.1.2.3", "mydb"):
         assert secret not in text
+
+
+async def test_reports_whether_research_is_available_so_the_ui_can_avoid_a_doomed_submit(api: Api) -> None:
+    assert (await api.call("/capabilities")).body["data"] == {"researchAvailable": True}
+    off = await api.call("/capabilities", deps=api.deps(research_available=False))
+    assert off.body["data"] == {"researchAvailable": False}
+    assert (await api.call("/capabilities", method="POST", body={})).status == 405
+
+
+async def test_records_the_classified_failure_kind_with_error_and_clears_it_on_any_later_status(api: Api) -> None:
+    owner = "33333333-3333-4333-8333-333333333333"
+    created = await create_investigation(api.db, owner, question="Why did it fail?", idempotency_key=None)
+    assert created.data is not None and created.data["failureKind"] is None
+    inv = created.data["id"]
+
+    failed = await set_investigation_status(api.db, owner, inv, "ERROR", "RATE_LIMIT")
+    assert failed.data is not None and failed.data["failureKind"] == "RATE_LIMIT"
+    # A kind is only meaningful with ERROR; passing one with another status stores nothing.
+    resumed = await set_investigation_status(api.db, owner, inv, "RESEARCHING", "RATE_LIMIT")
+    assert resumed.data is not None and resumed.data["failureKind"] is None
+    # The database refuses anything outside the classified set, so provider text can never be stored.
+    rejected = await set_investigation_status(api.db, owner, inv, "ERROR", "quota exceeded for key AQ.secret")
+    assert rejected.ok is False

@@ -44,6 +44,8 @@ export interface Investigation {
   readonly status: string
   readonly createdAt: string
   readonly updatedAt: string
+  /** Coarse, classified reason for an ERROR status; null otherwise. Never provider text. */
+  readonly failureKind: string | null
 }
 
 export interface Claim {

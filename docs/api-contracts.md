@@ -54,7 +54,8 @@ failure: `{ "error": { "code", "message", "field"? } }` with `VALIDATION_FAILED`
 | --- | --- |
 | `GET /api/health` | `200 {status:"ok"}` after `SELECT 1`, else `503` |
 | `POST /api/investigations` `{question, idempotencyKey?}` | `201`; creates and starts the workflow once (a replay does not start another); `503` when research keys are not configured |
-| `GET /api/investigations/:id` | The investigation (status: CREATED, RESEARCHING, ANALYZING, READY, REVIEW_REQUIRED, ERROR) |
+| `GET /api/investigations/:id` | The investigation (status: CREATED, RESEARCHING, ANALYZING, READY, REVIEW_REQUIRED, ERROR). `failureKind` is the classified reason for ERROR (`RATE_LIMIT`, `AUTHENTICATION`, `TIMEOUT`, `NETWORK`, `PROVIDER`, `MALFORMED_OUTPUT`, `VALIDATION`, `PERSISTENCE`, `AUTHORIZATION`, `WORKFLOW`), otherwise `null`; never provider text |
+| `GET /api/capabilities` | `200 {data: {researchAvailable}}`; lets the UI disable new investigations when no model or research provider is configured |
 | `GET /api/investigations/:id/claims`, `/evidence`, `/sources`, `/changes` | Owner-scoped lists; `limit` 1-100, `offset` |
 | `POST /api/investigations/:id/refresh` | `202` and a new run; `409` while a live run exists; takes over a run with no progress for 10 minutes |
 

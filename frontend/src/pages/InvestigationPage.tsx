@@ -10,7 +10,7 @@ import { useGateway } from '../gateway/gatewayContext'
 import type { InvestigationGateway } from '../gateway/types'
 import { useNow } from '../hooks/useNow'
 import { useResource } from '../hooks/useResource'
-import { BUSY_STATUSES, STATUS_LABEL } from '../lib/labels'
+import { BUSY_STATUSES, STATUS_LABEL, failureMessage } from '../lib/labels'
 
 const STALE_AFTER_MS = 10 * 60 * 1000
 
@@ -64,7 +64,7 @@ function InvestigationView({ gateway, id }: { gateway: InvestigationGateway; id:
       <ProgressSteps status={known} />
 
       {known === 'ERROR' ? (
-        <ErrorState title="The investigation stopped with an error" message="Work completed before the error is kept. You can retry the research." onRetry={() => void refresh()} />
+        <ErrorState title="The investigation stopped with an error" message={`${failureMessage(current.failureKind)} Work completed before the error is kept. You can retry the research.`} onRetry={() => void refresh()} />
       ) : null}
       {known === 'REVIEW_REQUIRED' ? (
         <PartialNotice title="Some claims need review">

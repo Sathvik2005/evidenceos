@@ -20,5 +20,6 @@ async def run_investigation_workflow(
     result = await run_investigation(graph, investigation_id=investigation_id, owner_id=owner_id, question=question)
     if result["status"] == "FAILED":
         # Best effort: if even this write fails, the FAILED snapshot is still returned to the caller.
-        await set_investigation_status(deps.db, owner_id, investigation_id, "ERROR")
+        failures = result.get("failures") or []
+        await set_investigation_status(deps.db, owner_id, investigation_id, "ERROR", failures[0].kind if failures else "WORKFLOW")
     return result

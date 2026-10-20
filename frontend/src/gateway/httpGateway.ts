@@ -39,6 +39,7 @@ export function createHttpGateway(baseUrl = '/api', fetchImpl: typeof fetch = (.
 
   return {
     createInvestigation: (input) => call('/investigations', post(input)),
+    getCapabilities: () => call('/capabilities'),
     getDemoInvestigation: () => call('/demo'),
     getInvestigation: (id) => call(`/investigations/${enc(id)}`),
     listClaims: (id) => call(`/investigations/${enc(id)}/claims`),

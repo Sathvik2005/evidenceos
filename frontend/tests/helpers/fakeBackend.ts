@@ -45,7 +45,7 @@ export class FakeBackend implements InvestigationGateway {
       return { ok: false, error: { code: 'VALIDATION_FAILED', message: 'question must be a non-empty string.', field: 'question' } }
     }
     const now = '2026-01-01T00:00:00.000Z'
-    const created: Investigation = { id: `inv-${this.nextId++}`, question: input.question, status: 'CREATED', createdAt: now, updatedAt: now }
+    const created: Investigation = { id: `inv-${this.nextId++}`, question: input.question, status: 'CREATED', createdAt: now, updatedAt: now, failureKind: null }
     this.records.investigations = [...this.records.investigations, created]
     this.runs.push(created.id)
     return ok(created)
@@ -70,6 +70,12 @@ export class FakeBackend implements InvestigationGateway {
 
   async listEvidenceChanges(id: string): Promise<ApiResult<EvidenceChange[]>> {
     return this.has(id) ? ok(this.records.changes.filter((c) => c.investigationId === id)) : notFound()
+  }
+
+  researchAvailable = true
+
+  async getCapabilities(): Promise<ApiResult<{ researchAvailable: boolean }>> {
+    return ok({ researchAvailable: this.researchAvailable })
   }
 
   async getDemoInvestigation(): Promise<ApiResult<{ investigationId: string | null }>> {
@@ -116,7 +122,7 @@ export const CLAIMS = {
   wellbeing: 'Remote learning changes student wellbeing',
 }
 
-const investigation = (status: string): Investigation => ({ id: INV, question: QUESTION, status, createdAt: AT, updatedAt: AT })
+const investigation = (status: string): Investigation => ({ id: INV, question: QUESTION, status, createdAt: AT, updatedAt: AT, failureKind: null })
 
 /** Claim 1 CONFLICTING after new evidence, claim 2 SUPPORTED, claim 3 INSUFFICIENT; one recorded change. */
 export function conflictingScenario(): Records {

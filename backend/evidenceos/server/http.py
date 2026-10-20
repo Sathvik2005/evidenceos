@@ -208,6 +208,11 @@ async def handle_api_request(
                 _log_error(deps, "health", error)
                 return respond(_json(503, {"status": "unavailable", "reason": await _probe_reason(deps.db, error), **await _target(deps.db)}))
 
+        if path == "/capabilities":
+            if method != "GET":
+                return respond(_not_allowed(cookie))
+            return respond(_json(200, {"data": {"researchAvailable": deps.research_available}}, cookie))
+
         if path == "/demo":
             if method != "GET":
                 return respond(_not_allowed(cookie))

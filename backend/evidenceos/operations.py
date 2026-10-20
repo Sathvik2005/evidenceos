@@ -58,7 +58,7 @@ def iso_or_none(value: Any) -> str | None:
 def to_investigation(r: Row) -> Record:
     return {
         "id": str(r["id"]), "question": r["question"], "status": r["status"],
-        "createdAt": iso(r["created_at"]), "updatedAt": iso(r["updated_at"]),
+        "createdAt": iso(r["created_at"]), "updatedAt": iso(r["updated_at"]), "failureKind": r.get("failure_kind"),
     }
 
 
@@ -396,7 +396,10 @@ async def list_evidence_changes(db: Database, owner_id: str, investigation_id: s
     return await _list_owned(db, owner_id, investigation_id, limit, offset, "evidence_changes", "changed_at, id", to_change)
 
 
-async def set_investigation_status(db: Database, owner_id: str, investigation_id: str, status: str) -> ApiResult[Record]:
+async def set_investigation_status(
+    db: Database, owner_id: str, investigation_id: str, status: str, failure_kind: str | None = None
+) -> ApiResult[Record]:
+    """Changes the status. `failure_kind` is kept only with ERROR; any other status clears it."""
     inv = check_uuid(investigation_id, "investigationId")
     nxt = check_enum(status, INVESTIGATION_STATUSES, "status")
     bad = first_error(inv, nxt)
@@ -406,7 +409,10 @@ async def set_investigation_status(db: Database, owner_id: str, investigation_id
     if not owned.ok:
         return owned
     try:
-        rows = await db.query("UPDATE investigations SET status = $2 WHERE id = $1 RETURNING *", [inv.data, nxt.data])
+        rows = await db.query(
+            "UPDATE investigations SET status = $2, failure_kind = $3 WHERE id = $1 RETURNING *",
+            [inv.data, nxt.data, failure_kind if nxt.data == "ERROR" else None],
+        )
     except Exception as error:
         return map_database_error(error)
     return ok(to_investigation(rows[0])) if rows else fail(NOT_FOUND, "Investigation not found.")

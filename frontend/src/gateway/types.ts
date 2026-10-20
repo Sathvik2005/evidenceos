@@ -13,6 +13,8 @@ export interface InvestigationGateway {
   listEvidence(investigationId: string): Promise<ApiResult<Evidence[]>>
   listSources(investigationId: string): Promise<ApiResult<Source[]>>
   listEvidenceChanges(investigationId: string): Promise<ApiResult<EvidenceChange[]>>
+  /** What this server can actually do, so the UI does not offer an action that is guaranteed to fail. */
+  getCapabilities(): Promise<ApiResult<{ researchAvailable: boolean }>>
   /** The read-only public demo investigation, when the server has one. */
   getDemoInvestigation(): Promise<ApiResult<{ investigationId: string | null }>>
   /** Starts another research run so newly available evidence can be assessed (or a failed run retried). */

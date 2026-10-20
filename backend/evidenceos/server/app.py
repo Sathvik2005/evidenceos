@@ -75,7 +75,7 @@ def create_app(
             )
         except Exception:
             log({"evt": "workflow-crash", "investigationId": investigation_id})
-            await set_investigation_status(database, owner_id, investigation_id, "ERROR")
+            await set_investigation_status(database, owner_id, investigation_id, "ERROR", "WORKFLOW")
 
     deps = ApiDeps(
         db=database,
